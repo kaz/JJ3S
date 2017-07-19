@@ -276,7 +276,7 @@ canvas {
       <ul>
         <li><a href="#editor" id="editorButton">Editor</a></li>
         <li><a href="#canvas">Canvas</a></li>
-        <li><a href="#macro">Macro</a></li>
+        <!--<li><a href="#macro">Macro</a></li>-->
         <li><a href="#compiled">Compiled</a></li>
         <li><a href="#docs">Document</a></li>
       </ul>
@@ -312,7 +312,7 @@ canvas {
         <button type="button" id="load">Load</button>
         <input type="file" id="file"></input>
       </div>
-      <pre id="macro"></pre>
+      <pre id="macro" style="display: none"></pre>
       <div id="compiled">
         <pre id="compiledEd"></pre>
         <span id="dlMsg">Download</span>
@@ -321,102 +321,35 @@ canvas {
         <a href="" id="dlCommit" style="display:none"></a>
       </div>
       <div id="docs">
-        <h1>EX3+ Document</h1>
+        <h1>jj3s-lua Document</h1>
         <h2>コレは何</h2>
-        情報実験第三でゲームが作りたくなったのでとりあえずシミュレータを作った。
-        <br>
-        JJ3Sは情報実験第三シミュレータの略です。
-        <br>
-        とりあえずExecuteを押してみよう。
-        <h2>描画について</h2>
-        描画できるものとしては、40×30のスプライトマップと9つの動的スプライトになります。
-        <br>
-        各16×16スプライトは対応するCanvasのスプライト番号と回転角度(0~3)の値を持っています。
-        <br>
-        CPUは現在の選択スプライトを記憶しており、その変更とそれに対する操作によって描画を行うことになります。
-        <br> <br>
-        固定位置にスプライトを画面に描画するには次の手順を踏みます。
+        <a style="color:inherit" href="https://phi16.github.io/JJ3S/">JJ3S</a>にLuaコンパイラをつけました。
+        <h2>制限</h2>
+        Lua(5.3)のサブセットです。<br>
         <ul>
-          <li>選択スプライトを描画したい場所に設定します。(<b>SLX, SLY</b>)</li>
-          <li>描画したいスプライトIDを書き込みます。(<b>WRT</b>)</li>
-          <li>(回転したい場合はその角度(0~3)×64を加算して書き込んでください。)</li>
+          <li><b>変数</b>: int型、テーブル型のみ</li>
+          <li><b>テーブル型</b>: 固定長配列のみ</li>
+          <li><b>制御構文</b>: goto(label), do, while, if . elseif . else, function</li>
+          <li><b>関数</b>: 固定長引数のみ</li>
+          <li><b>演算子</b>: ^(累乗) ~(xor) ..(文字列連結) #(配列長) 使用不可</li>
+          <li><b>標準ライブラリ</b>: なし</li>
         </ul>
-        動的スプライトを位置指定と共に描画するには次の手順を踏みます。
-        <ul>
-          <li>選択スプライトを描画したいスプライトに設定します。</li>
-          <ul>
-            <li>ACをFFFFの状態で<b>SLX</b>した後に選択する動的スプライトの番号(0~4)で<b>SLY</b>してください。</li>
-          </ul>
-          <li>描画したいスプライトIDを書き込みます。(<b>WRT</b>)</li>
-          <li>(回転したい場合はその角度(0~3)×64を加算して書き込んでください。)</li>
-          <li>移動したい位置(-16~640,-16~480)を書き込みます。(<b>TRX, TRY</b>)</li>
-        </ul>
-        1フレームには約70000命令費やす事ができます。これを超えると描画がおかしくなると思います。
-
-        <h2>追加命令</h2>
-        画面描画命令を追加するために割り込み関連の命令は全部無くなりました。
-        <ul>
-          <li>
-            <b>SEG</b>: セグメントにACの値を16進数で表示します。
-          </li>
-          <li>
-            <b>SLX, SLY</b>: 選択スプライトのX,YをACに設定します。
-          </li>
-          <li>
-            <b>WRT</b>: 選択スプライトのスプライト番号をACに設定します。(2bit/6bitで回転角・番号)
-          </li>
-          <li>
-            <b>TRX, TRY</b>: 選択スプライト(動的スプライト)の位置X,YをACに設定します。
-          </li>
-          <li>
-            <b>BTN</b>: 現在の4ボタン{左上下右}の状態をACに格納します。
-          </li>
-          <li>
-            <b>SLP</b>: 次のフレームになるまで待機します。
-          </li>
-          <li>
-            <b>RND</b>: 0~65535の範囲の乱数をACに格納します。
-          </li>
-        </ul>
-        ISZ命令はいらないということでMULが追加されました。
-        <ul>
-          <li>
-            <b>MUL</b>: 乗算命令です。ACの値に掛け合わせます。
-          </li>
-        </ul>
-        <h2>定数</h2>
-        オペランドに定数を指定できます。<br>
-        例: <code>ADD %1111b // AC += 15</code><br>
-        例: <code>ADD %-10o  // AC += -8</code><br>
-        例: <code>ADD %-40d  // AC += -40</code><br>
-        例: <code>ADD %20h   // AC += 32</code><br>
-        <h2>Macroの使い方</h2>
-        サンプル見たらだいたいわかると思う。
-        ちなみに左右の区切りは最後の「 = 」です。(空白込み)
-        <h2>その他機能</h2>
-        <b>BREAK</b> と書くとそこにブレークポイントが仕込めます。
-        <br>
-        通常実行時にそこに引っかかると一時停止し、好きにステップ実行などができます。
-        <br>
-        仕込まれる場所は「次の命令」なので、ラベルの前とかに書くと期待通りにいかないかも。
-        <br>
-        一度仕込むと実行中に消すとかできないのでめっちゃ不便。
-        <br><br>
-        <b>ASSERT 値1 比較演算 値2</b> と書くと条件を<b>満たさないとき</b>にブレークポイントが仕込めます。(スペース必須)
-        <br>
-        メモリにはラベル・AC・数値のどれかを使えます。関係演算は「==, !=, >=, >, <=, <」のどれかです。
-        <br>
-        >=などでは値を-32768~32767として解釈するので注意してください。
-        <br>
-        数値を書くときには通常は10進数、0xをつけると16進数として解釈します。
-        <br><br>
-        あと開発者コンソールで <b>vim();</b> って打つとVimキーバインドになります。
-        <br>
-        設定は自動保存なのでやめたいときはlocalStorageのそれっぽいのをふっ飛ばしてください。
+        <h2>EX3ライブラリ</h2>
+        <h3>ex3.sleep()</h3>
+        次のフレームになるまで待機します。 
+        <h3>ex3.get_random()</h3>
+        0~65535の範囲の乱数を返します。
+        <h3>ex3.get_key_state()</h3>
+        キーが押されていれば1を、押されていなければ0を返します。<br>
+        右、上、下、左の順番で、4つの値を同時に返します。
+        <h3>ex3.output_7seg(val)</h3>
+        7セグディスプレイにvalの値を16進数で表示します。 
+        <h3>ex3.output_draw_static_sprite(sprite_id, rotate, x, y)</h3>
+        指定された場所にスプライトを描画します。
+        <h3>ex3.output_draw_dynamic_sprite(sprite_id, rotate, x, y, dynamic_index)</h3>
+        指定された場所にスプライトを描画、または移動します。
         <h2>TODO</h2>
-        <ul>
-          <li>マクロ内でラベル生成</li>
-        </ul>
+        手書きEX3より10倍くらい遅い……（どうしよう）
         <div style="height:30px"></div>
       </div>
     </div>
@@ -442,172 +375,47 @@ canvas {
       </div>
     </div>
     <script src="src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="compiler/bundle.js" type="text/javascript" charset="utf-8"></script>
     <script src="ex3.js" type="text/javascript" charset="utf-8"></script>
     <script>
-const defaultSource = `    ORG 10
-LoopY,
-    CLA
-    STA X
-LoopX,
-    LDA X
-    SLX
-    LDA Y
-    SLY
-    LDA Y
-    MUL _64
-    ADD X
-    WRT
+const defaultSource = `
+y = 0
+while y < 30 do
+    x = 0
+    while x < 40 do
+        ex3.draw_static_sprite(8*7 + 7, 0, x, y)
+        x = x + 1
+    end
+    y = y + 1
+end
 
-    @inc X
-    @if (X>=W) goto LoopX
+px = 0
+py = 0
+qx = 0
+qy = 0
 
-    @inc Y
-    @if (Y>=H) goto LoopY
-
-Main,
-    LDA m1
-    SLX
-    LDA _0
-    SLY
-    LDA px
-    TRX
-    @inc px
-    @inc px
-    LDA py
-    TRY
-    @inc py
-    @inc py
-    LDA W
-    WRT
-    @if (py!=maxPY) goto Chara
-    LDA m32
-    STA px
-    STA py
-Chara,
-    LDA m1
-    SLX
-    LDA _1
-    SLY
-    LDA qx
-    TRX
-    LDA qy
-    TRY
-    LDA t
-    WRT
-    BTN
-    AND Left
-    @if (AC) goto moveLeft
-    BTN
-    AND Right
-    @if (AC) goto moveRight
-    BTN
-    AND Up
-    @if (AC) goto moveUp
-    BTN
-    AND Down
-    @if (AC) goto moveDown
-    BUN Done
-moveLeft,
-    @eq qx += m3
-    BUN Done
-moveRight,
-    @eq qx += _3
-    BUN Done
-moveUp,
-    @eq qy += m3
-    BUN Done
-moveDown,
-    @eq qy += _3
-    BUN Done
-Done,
-    BTN
-    SEG
-End,
-    SLP
-    BUN Main
-
-px, DEC 0
-py, DEC 0
-qx, DEC 0
-qy, DEC 0
-t,  DEC 60
-
-X,  DEC 0
-Y,  DEC 0
-W,  DEC 40
-H,  DEC 30
-maxPY, DEC 480
-
-m1,  DEC -1
-m3,  DEC -3
-m32, DEC -32
-_0,  DEC 0
-_1,  DEC 1
-_2,  DEC 2
-_3,  DEC 3
-_64, DEC 64
-
-Left,  HEX 8
-Down,  HEX 4
-Up,    HEX 2
-Right, HEX 1
-
-END`;
-
-const defaultMacro = `@inc $1 {
-  LDA $1
-  INC
-  STA $1
-}
-@if ($1+$2) goto $3 {
-  LDA $1
-  ADD $2
-  SZA
-  BUN $3
-}
-@if ($1!=$2) goto $3 {
-  LDA $1
-  CMA
-  INC
-  ADD $2
-  SZA
-  BUN $3
-}
-@if (AC) goto $1 {
-  SZA
-  BUN $1
-}
-@if ($1) goto $2 {
-  LDA $1
-  SZA
-  BUN $2
-}
-@if ($1>=$2) goto $3 {
-  LDA $2
-  CMA
-  INC
-  ADD $1
-  SNA
-  BUN $3
-}
-@if ($1<$2) goto $3 {
-  LDA $2
-  CMA
-  INC
-  ADD $1
-  SPA
-  BUN $3
-}
-@eq $1 = $2 + $3 {
-  LDA $2
-  ADD $3
-  STA $1
-}
-@eq $1 += $2 {
-  LDA $1
-  ADD $2
-  STA $1
-}`;
+while 1 do
+    r,u,d,l = ex3.get_key_state()
+    
+    if u then qy = qy - 1 end
+    if d then qy = qy + 1 end
+    if l then qx = qx - 1 end
+    if r then qx = qx + 1 end
+    
+    px = px + 1
+    py = py + 1
+    if py > 480 then
+        px = 0
+        py = 0
+    end
+    
+    ex3.draw_dynamic_sprite(8*7 + 0, 0, px, py, 0)
+    ex3.draw_dynamic_sprite(8*0 + 0, 0, qx, qy, 1)
+    
+    ex3.sleep()
+end
+`;
+const defaultMacro = ``;
 
 const vShader = `
 precision mediump float;
@@ -701,16 +509,20 @@ const entrypoint = (sharedSource, sharedMacro) => {
     localStorage.setItem('src',src);
     localStorage.setItem('macro',macro);
     let logs = "";
-    ex3.load(src,macro,txt=>{
-      logs += txt + "\n";
-    });
+    try {
+      ex3.load(Compiler.compile(src), macro, txt => {
+        logs += txt + "\n";
+      });
+    } catch(e) {
+      logs += e + "\n";
+    }
     writeLog(logs);
     writeMem("");
   }
   var editor = ace.edit("editor");
   editor.setTheme("ace/theme/monokai");
   editor.setFontSize(20);
-  editor.session.setMode("ace/mode/ex3");
+  editor.session.setMode("ace/mode/lua");
   editor.$blockScrolling = Infinity;
   var macroEditor = ace.edit("macro");
   macroEditor.setTheme("ace/theme/monokai");

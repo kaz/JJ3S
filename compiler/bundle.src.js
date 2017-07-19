@@ -1,0 +1,1 @@
+window.Compiler = require("./compiler");

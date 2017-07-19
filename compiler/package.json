@@ -1,0 +1,11 @@
+{
+  "scripts": {
+  	"start": "node_modules/.bin/webpack bundle.src.js bundle.js"
+  },
+  "dependencies": {
+    "luaparse": "^0.2.1"
+  },
+  "devDependencies": {
+    "webpack": "^3.3.0"
+  }
+}
