@@ -33,7 +33,7 @@ ex3.load = (src,macro,log)=>{
   let macros = {};
   let constants = {};
   const re = /^(.*)\s*\{([\s\S]+?)\}/;
-  macro.match(new RegExp(re, "mg")).forEach(l=>{
+  (macro.match(new RegExp(re, "mg")) || []).forEach(l=>{
     let lm = l.match(re)
     if(!lm)return;
     let lz = [lm[1],lm[2]].map(e=>e.split(/;|\n/).map(e=>e.trim()).filter(e=>e).join(";"));
