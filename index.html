@@ -1018,7 +1018,7 @@ const entrypoint = (sharedSource, sharedMacro) => {
   }
 };
 
-Promise.all([fetch("./source.txt"), fetch("./macro.txt")])
+Promise.all([fetch("./source.lua"), fetch("./macro.txt")])
 .then(resp => Promise.all(resp.map(item => item.text())))
 .then(data => entrypoint(...data));
 
