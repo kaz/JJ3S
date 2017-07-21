@@ -2706,21 +2706,12 @@ F_EX3_get_key_state,
 	BSA F_PUSH
 	BTN
 	AND (2)
-	CLE
-	CIR
 	BSA F_PUSH
 	BTN
 	AND (4)
-	CLE
-	CIR
-	CIR
 	BSA F_PUSH
 	BTN
 	AND (8)
-	CLE
-	CIR
-	CIR
-	CIR
 	BSA F_PUSH
 	BUN F_EX3_get_key_state I
 
