@@ -2290,6 +2290,7 @@ const compile = abs_syn_tree => {
 	const current_env = _ => env_stack[env_stack.length-1];
 	const exit_env = _ => env_stack.pop();
 	const enter_env = _ => env_stack.push("VAR_E"+(gCnt++));
+	
 	const find_var = name => {
 		const label = env_stack.map(e => e+"_"+name).filter(e => e in env_vars).pop();
 		return label || assign_var(name, false);
@@ -2298,7 +2299,12 @@ const compile = abs_syn_tree => {
 		const label = (local ? current_env() : env_stack[0])+"_"+name;
 		return env_vars[label] = label;
 	};
+	
 	const gen_label = (num, prefix = "L_SYS_") => "A".repeat(num).split("").map(e => prefix+(gCnt++));
+	
+	let currentLoop = null;
+	const start_loop = label => currentLoop = label;
+	const interrupt_loop = _ => currentLoop;
 
 	const cvals = {};
 	const const_value = v => {
@@ -2333,6 +2339,7 @@ const compile = abs_syn_tree => {
 		}
 		else if(ast.type == "WhileStatement"){
 			const [ls,lc,le] = gen_label(3);
+			start_loop(le);
 			
 			enter_env();
 			t.push(ls+",");
@@ -2347,8 +2354,63 @@ const compile = abs_syn_tree => {
 			t.push(le+",");
 			exit_env();
 		}
+		else if(ast.type == "RepeatStatement"){
+			const [lc,le] = gen_label(2);
+			start_loop(le);
+			
+			enter_env();
+			t.push(lc+",");
+			ast.body.forEach(e => code_gen(e, t));
+			code_gen(ast.condition, t);
+			t.push("BSA F_POP");
+			t.push("SZA");
+			t.push("BUN "+le);
+			t.push("BUN "+lc);
+			t.push(le+",");
+			exit_env();
+		}
+		else if(ast.type == "ForNumericStatement"){
+			const [ls,le] = gen_label(2);
+			start_loop(le);
+			
+			enter_env();
+			code_gen(ast.start, t);
+			t.push("BSA F_POP");
+			t.push("STA "+assign_var(ast.variable.name, true));
+			
+			t.push(ls+",");
+			ast.body.forEach(e => code_gen(e, t));
+			
+			if(ast.step === null){
+				t.push("LDA "+find_var(ast.variable.name));
+				t.push("INC");
+				t.push("STA "+find_var(ast.variable.name));
+			}
+			else{
+				code_gen(ast.step, t);
+				t.push("BSA F_POP");
+				t.push("ADD "+find_var(ast.variable.name));
+				t.push("STA "+find_var(ast.variable.name));
+			}
+			
+			t.push("LDA "+find_var(ast.variable.name));
+			t.push("CMA");
+			t.push("INC");
+			t.push("STA R_T1");
+			code_gen(ast.end, t);
+			t.push("BSA F_POP");
+			t.push("ADD R_T1");
+			t.push("SNA");
+			t.push("BUN "+ls);
+			
+			t.push(le+",");
+			exit_env();
+		}
+		else if(ast.type == "BreakStatement"){
+			t.push("BUN "+interrupt_loop());
+		}
 		else if(ast.type == "IfStatement"){
-			const le = gen_label(1);
+			const [le] = gen_label(1);
 			
 			ast.clauses.forEach(ast => {
 				const [lc,ln] = gen_label(2);
@@ -2715,6 +2777,7 @@ F_EX3_get_key_state,
 	BSA F_PUSH
 	BUN F_EX3_get_key_state I
 
+F_USR_print,
 F_EX3_output_7seg,
 	HEX 0
 	BSA F_POP
@@ -2867,6 +2930,9 @@ R_ESP, SYM STACK
 
 const constantFolding = tree => {
 	const scanTree = t => {
+		if(!t){
+			return null;
+		}
 		if(t.type == "NumericLiteral"){
 			return t.value;
 		}

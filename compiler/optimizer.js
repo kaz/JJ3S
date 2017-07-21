@@ -2,6 +2,9 @@
 
 const constantFolding = tree => {
 	const scanTree = t => {
+		if(!t){
+			return null;
+		}
 		if(t.type == "NumericLiteral"){
 			return t.value;
 		}

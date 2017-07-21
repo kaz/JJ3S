@@ -329,11 +329,14 @@ canvas {
         <ul>
           <li><b>変数</b>: int型、テーブル型のみ</li>
           <li><b>テーブル型</b>: 固定長配列のみ</li>
-          <li><b>制御構文</b>: goto(label), do, while, if . elseif . else, function</li>
+          <li><b>制御構文</b>: for...in 以外の全て</li>
           <li><b>関数</b>: 固定長引数のみ</li>
           <li><b>演算子</b>: ^(累乗) ~(xor) ..(文字列連結) #(配列長) 使用不可</li>
           <li><b>標準ライブラリ</b>: なし</li>
         </ul>
+        <h2>注意</h2>
+        int型しか存在しないため、比較演算子はboolではなく{0, 1}を返します。<br>
+        0のみがfalseとして扱われ、その他の値は全てtrueです。
         <h2>EX3ライブラリ</h2>
         <h3>ex3.sleep()</h3>
         次のフレームになるまで待機します。 
@@ -349,7 +352,7 @@ canvas {
         <h3>ex3.draw_dynamic_sprite(sprite_id, rotate, x, y, dynamic_index)</h3>
         指定された場所にスプライトを描画、または移動します。
         <h2>TODO</h2>
-        手書きEX3より10倍くらい遅い……（どうしよう）
+        手書きEX3より10倍くらい遅い……（でも実機なら大丈夫そう？）
         <div style="height:30px"></div>
       </div>
     </div>
@@ -546,7 +549,9 @@ const entrypoint = (sharedSource, sharedMacro) => {
     compiledEd.session.getDocument().setValue(ss.join("\n"));
   };
   function moveLine(ln){
-    $("#editorButton").click();
+    if(breaking){
+      $("#editorButton").click();
+    }
     compiledEd.gotoLine(ln,0,false);
   }
   const initSource = localStorage.getItem('src');

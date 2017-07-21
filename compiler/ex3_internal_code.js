@@ -27,6 +27,7 @@ F_EX3_get_key_state,
 	BSA F_PUSH
 	BUN F_EX3_get_key_state I
 
+F_USR_print,
 F_EX3_output_7seg,
 	HEX 0
 	BSA F_POP
