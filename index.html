@@ -274,10 +274,10 @@ canvas {
   <body>
     <div id="tab">
       <ul>
-        <li><a href="#editor" id="editorButton">Editor</a></li>
+        <li><a href="#editor">Editor</a></li>
         <li><a href="#canvas">Canvas</a></li>
         <!--<li><a href="#macro">Macro</a></li>-->
-        <li><a href="#compiled">Compiled</a></li>
+        <li><a href="#compiled" id="editorButton">Compiled</a></li>
         <li><a href="#docs">Document</a></li>
       </ul>
       <pre id="editor"></pre>
@@ -344,9 +344,9 @@ canvas {
         右、上、下、左の順番で、4つの値を同時に返します。
         <h3>ex3.output_7seg(val)</h3>
         7セグディスプレイにvalの値を16進数で表示します。 
-        <h3>ex3.output_draw_static_sprite(sprite_id, rotate, x, y)</h3>
+        <h3>ex3.draw_static_sprite(sprite_id, rotate, x, y)</h3>
         指定された場所にスプライトを描画します。
-        <h3>ex3.output_draw_dynamic_sprite(sprite_id, rotate, x, y, dynamic_index)</h3>
+        <h3>ex3.draw_dynamic_sprite(sprite_id, rotate, x, y, dynamic_index)</h3>
         指定された場所にスプライトを描画、または移動します。
         <h2>TODO</h2>
         手書きEX3より10倍くらい遅い……（どうしよう）
@@ -547,7 +547,7 @@ const entrypoint = (sharedSource, sharedMacro) => {
   };
   function moveLine(ln){
     $("#editorButton").click();
-    editor.gotoLine(ln,0,false);
+    compiledEd.gotoLine(ln,0,false);
   }
   const initSource = localStorage.getItem('src');
   if(initSource){
