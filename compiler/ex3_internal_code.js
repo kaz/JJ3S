@@ -166,6 +166,8 @@ R,	DEC 0
 
 R_T1,  HEX 0
 R_T2,  HEX 0
+R_T3,  HEX 0
+
 R_ESP, SYM STACK
 
 `;

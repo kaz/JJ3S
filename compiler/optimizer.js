@@ -73,11 +73,17 @@ const constantFolding = tree => {
 			if(t.operator == "/" || t.operator == "//"){
 				return parseInt(l/r);
 			}
+			if(t.operator == "^"){
+				return l**r;
+			}
 			if(t.operator == "%"){
 				return l%r;
 			}
 			if(t.operator == "&"){
 				return l&r;
+			}
+			if(t.operator == "~"){
+				return l^r;
 			}
 			if(t.operator == ">>"){
 				return l>>r;

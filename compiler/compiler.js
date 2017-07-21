@@ -179,14 +179,15 @@ const compile = abs_syn_tree => {
 			});
 		}
 		else if(ast.type == "TableConstructorExpression"){
-			const [l,g] = gen_label(2, "TABLE_");
+			const [l] = gen_label(1, "TABLE_");
+			
+			asm_sub.push(l+"_PTR,");
+			asm_sub.push("SYM "+l);
+			asm_sub.push("DEC "+ast.fields.length);
 			asm_sub.push(l+",");
-			ast.fields.forEach((item, key) => {
-				asm_sub.push("DEC "+item.value.value);
-			});
-			t.push(g+",");
-			t.push("SYM "+l);
-			t.push("LDA "+g);
+			ast.fields.forEach(item => asm_sub.push("DEC "+item.value.value));
+			
+			t.push("LDA "+l+"_PTR");
 			t.push("BSA F_PUSH");
 		}
 		else if(ast.type == "IndexExpression"){
@@ -229,6 +230,30 @@ const compile = abs_syn_tree => {
 				t.push("BSA F_POP");
 				t.push("MUL R_T1");
 			}
+			else if(ast.operator == "^"){
+				t.push("BSA F_POP");
+				t.push("STA R_T1");
+				t.push("BSA F_POP");
+				t.push("STA R_T2");
+				t.push("LDA "+const_value(1));
+				t.push("STA R_T3");
+				
+				const [ls,lc,le] = gen_label(3);
+				t.push(ls+",");
+				t.push("LDA R_T1");
+				t.push("SZA");
+				t.push("BUN "+lc);
+				t.push("BUN "+le);
+				t.push(lc+",");
+				t.push("ADD "+const_value(-1));
+				t.push("STA R_T1");
+				t.push("LDA R_T3");
+				t.push("MUL R_T2");
+				t.push("STA R_T3");
+				t.push("BUN "+ls);
+				t.push(le+",");
+				t.push("LDA R_T3");
+			}
 			else if(ast.operator == "/" || ast.operator == "//" || ast.operator == "%"){
 				t.push("LDA "+const_value(ast.operator == "%" ? 1 : 0));
 				t.push("BSA F_PUSH");
@@ -240,6 +265,19 @@ const compile = abs_syn_tree => {
 				t.push("STA R_T1");
 				t.push("BSA F_POP");
 				t.push("AND R_T1");
+			}
+			else if(ast.operator == "~"){
+				t.push("BSA F_POP");
+				t.push("STA R_T2");
+				t.push("BSA F_POP");
+				t.push("STA R_T1");
+				t.push("CMA");
+				t.push("AND R_T2");
+				t.push("STA R_T3");
+				t.push("LDA R_T2");
+				t.push("CMA");
+				t.push("AND R_T1");
+				t.push("ADD R_T3");
 			}
 			else if(ast.operator == ">>" || ast.operator == "<<"){
 				t.push("BSA F_POP");
@@ -439,6 +477,12 @@ const compile = abs_syn_tree => {
 				t.push("CLA");
 				t.push(le+",");
 			}
+			else if(ast.operator == "#"){
+				t.push("BSA F_POP");
+				t.push("ADD "+const_value(-1));
+				t.push("STA R_T1");
+				t.push("LDA R_T1 I");
+			}
 			else {
 				throw new Error("Unknown unop: "+ast.operator);
 			}
@@ -454,7 +498,7 @@ const compile = abs_syn_tree => {
 	asm_main.unshift("ORG 10");
 	asm_main.push("HLT");
 
-	Object.keys(env_vars).forEach(l => asm_sub.push(l+",\tHEX 0"))
+	Object.keys(env_vars).forEach(l => asm_sub.push(l+",\tDEC 0"))
 
 	ex3_internal_code.split("\n")
 	.map(e => e.trim().replace(/\((-?\d+)\)/, (v, i) => const_value(parseInt(i))))

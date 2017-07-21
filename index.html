@@ -331,7 +331,7 @@ canvas {
           <li><b>テーブル型</b>: 固定長配列のみ</li>
           <li><b>制御構文</b>: for...in 以外の全て</li>
           <li><b>関数</b>: 固定長引数のみ</li>
-          <li><b>演算子</b>: ^(累乗) ~(xor) ..(文字列連結) #(配列長) 使用不可</li>
+          <li><b>演算子</b>: ..(文字列連結) 以外の全て</li>
           <li><b>標準ライブラリ</b>: なし</li>
         </ul>
         <h2>注意</h2>
@@ -417,7 +417,7 @@ while 1 do
     
     ex3.sleep()
 end
-`;
+`.trim();
 const defaultMacro = ``;
 
 const vShader = `
