@@ -82,7 +82,7 @@ const compiler = __webpack_require__(5);
 const optimizer = __webpack_require__(7);
 
 module.exports = lua_user_code => {
-	//console.error = _ => 1;
+	console.error = _ => 1;
 	
 	const rawTree = parser.parse(lua_user_code, {luaVersion: "5.3"});
 	console.error("<<<raw>>>");
@@ -2838,7 +2838,6 @@ F_EX3_output_7seg,
 	HEX 0
 	BSA F_POP
 	SEG
-	BREAK
 	BUN F_EX3_output_7seg I
 
 F_EX3_draw_static_sprite,

@@ -385,14 +385,10 @@ canvas {
     <script src="ex3.js" type="text/javascript" charset="utf-8"></script>
     <script>
 const defaultSource = `
-y = 0
-while y < 30 do
-    x = 0
-    while x < 40 do
+for y = 0, 29 do
+    for x = 0, 39 do
         ex3.draw_static_sprite(8*7 + 7, 0, x, y)
-        x = x + 1
     end
-    y = y + 1
 end
 
 px = 0

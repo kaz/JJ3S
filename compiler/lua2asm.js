@@ -5,7 +5,7 @@ const compiler = require("./compiler");
 const optimizer = require("./optimizer");
 
 module.exports = lua_user_code => {
-	//console.error = _ => 1;
+	console.error = _ => 1;
 	
 	const rawTree = parser.parse(lua_user_code, {luaVersion: "5.3"});
 	console.error("<<<raw>>>");
