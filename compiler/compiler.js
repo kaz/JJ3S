@@ -247,17 +247,21 @@ const compile = abs_syn_tree => {
 				t.push("BSA F_POP");
 				t.push("STA R_T2");
 				
-				const [l] = gen_label(1);
-				t.push(l+",");
+				const [ls,lc,le] = gen_label(3);
+				t.push(ls+",");
+				t.push("LDA R_T1");
+				t.push("SZA");
+				t.push("BUN "+lc);
+				t.push("BUN "+le);
+				t.push(lc+",");
+				t.push("ADD "+const_value(-1));
+				t.push("STA R_T1");
 				t.push("LDA R_T2");
 				t.push("CLE");
 				t.push(ast.operator == ">>" ? "CIR" : "CIL");
 				t.push("STA R_T2");
-				t.push("LDA R_T1");
-				t.push("ADD "+const_value(-1));
-				t.push("STA R_T1");
-				t.push("SZA");
-				t.push("BUN "+l);
+				t.push("BUN "+ls);
+				t.push(le+",");
 				t.push("LDA R_T2");
 			}
 			else if(ast.operator == "=="){
