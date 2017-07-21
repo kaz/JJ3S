@@ -351,8 +351,11 @@ canvas {
         指定された場所にスプライトを描画します。
         <h3>ex3.draw_dynamic_sprite(sprite_id, rotate, x, y, dynamic_index)</h3>
         指定された場所にスプライトを描画、または移動します。
-        <h2>TODO</h2>
-        手書きEX3より10倍くらい遅い……（でも実機なら大丈夫そう？）
+        <h2>インラインアセンブラ</h2>
+        <h3>__ASM__()</h3>
+        EX3命令を直接埋め込みます。
+        <h3>__EVAL__()</h3>
+        コンパイラのContext内でJavaScriptコードを実行し、その返り値をEX3命令として埋め込みます。
         <div style="height:30px"></div>
       </div>
     </div>

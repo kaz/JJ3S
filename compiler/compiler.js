@@ -46,8 +46,16 @@ const compile = abs_syn_tree => {
 		else if(ast.type == "CallExpression"){
 			const base = "base" in ast.base ? ast.base.base.name.toUpperCase() : "USR";
 			const name = "identifier" in ast.base ? ast.base.identifier.name : ast.base.name;
-			ast.arguments.forEach(e => code_gen(e, t));
-			t.push("BSA F_"+base+"_"+name);
+			if(name == "__ASM__"){
+				t.push(ast.arguments[0].value);
+			}
+			else if(name == "__EVAL__"){
+				t.push(eval(ast.arguments[0].value));
+			}
+			else{
+				ast.arguments.forEach(e => code_gen(e, t));
+				t.push("BSA F_"+base+"_"+name);
+			}
 		}
 		else if(ast.type == "LabelStatement"){
 			t.push("L_USR_"+ast.label.name+",");
