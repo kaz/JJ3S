@@ -1,9 +1,8 @@
 "use strict";
 
-const luaparse = require("luaparse");
 const ex3_internal_code = require("./ex3_internal_code");
 
-module.exports.compile = lua_user_code => {
+const compile = abs_syn_tree => {
 	const asm_main = [];
 	const asm_sub = [];
 
@@ -462,66 +461,22 @@ module.exports.compile = lua_user_code => {
 		}
 	};
 
-	const optimize = t => {
-		const __optimize = t => {
-			const newt = [];
-			for(let i = 0; i < t.length; i++){
-				if(t[i] == "BSA F_PUSH" && t[i+1] == "BSA F_POP"){
-					i++;
-					continue;
-				}
-				if(t[i] == "BSA F_POP" && t[i+1] == "BSA F_PUSH"){
-					i++;
-					continue;
-				}
-				
-				const cm = t[i].match(new RegExp("^(LDA|STA) (.+)$"));
-				if(cm){
-					const nm = (t[i+1] || "").match(new RegExp("^(LDA|STA) "+cm[2]+"$"));
-					if(nm){
-						if(cm[1] == "LDA" && nm[1] == "STA"){
-							i++;
-							continue;
-						}
-						if(cm[1] == "STA" && nm[1] == "LDA"){
-							newt.push(t[i++]);
-							continue;
-						}
-					}
-				}
-				
-				newt.push(t[i]);
-			}
-			return newt;
-		};
-		
-		const ol = t.length;
-		let len;
-		
-		do {
-			len = t.length;
-			t = __optimize(t);
-		}while(len-t.length);
-		
-		//console.error("optimized "+ol+" -> "+t.length)
-		return t;
-	};
-
-	const ast = luaparse.parse(lua_user_code, {luaVersion: "5.3"});
-	//console.error(JSON.stringify(ast, null, 2));
-
-	code_gen(ast, asm_main);
+	code_gen(abs_syn_tree, asm_main);
 	asm_main.unshift("ORG 10");
 	asm_main.push("HLT");
+
+	Object.keys(env_vars).forEach(l => asm_sub.push(l+",\tHEX 0"))
 
 	ex3_internal_code.split("\n")
 	.map(e => e.trim().replace(/\((-?\d+)\)/, (v, i) => const_value(parseInt(i))))
 	.filter(e => e)
 	.forEach(e => asm_sub.push(e));
-
-	Object.keys(env_vars).forEach(l => asm_sub.push(l+",\tHEX 0"))
+	
 	Object.keys(cvals).forEach(l => asm_sub.push(l+",\t"+cvals[l]));
+
 	asm_sub.push("STACK,\tEND");
 
-	return optimize(asm_main.concat(asm_sub)).map(e => /,/.test(e) ? e : `\t${e}`).join("\n");
+	return asm_main.concat(asm_sub);
 };
+
+module.exports = {compile};

@@ -1,1 +1,1 @@
-window.Compiler = require("./compiler");
+window.lua2asm = require("./lua2asm");

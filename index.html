@@ -510,7 +510,7 @@ const entrypoint = (sharedSource, sharedMacro) => {
     localStorage.setItem('macro',macro);
     let logs = "";
     try {
-      ex3.load(Compiler.compile(src), macro, txt => {
+      ex3.load(lua2asm(src), macro, txt => {
         logs += txt + "\n";
       });
     } catch(e) {
