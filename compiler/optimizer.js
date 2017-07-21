@@ -20,67 +20,67 @@ const constantFolding = tree => {
 				return a ? 0 : 1;
 			}
 		}
-		if(t.type == "BinaryExpression"){
-			const [r,l] = [scanTree(t.right), scanTree(t.left)];
-			if(t.operator == "and" && r !== null && !r){
-				return 0;
+		if(t.type == "BinaryExpression" || t.type == "LogicalExpression"){
+			const [l,r] = [scanTree(t.left), scanTree(t.right)];
+			if(t.operator == "and" && l !== null && !l){
+				return l;
 			}
-			if(t.operator == "or" && r !== null && r){
-				return 1;
+			if(t.operator == "or" && l !== null && l){
+				return l;
 			}
 			if(r === null || l === null){
 				return null;
 			}
 			if(t.operator == "and"){
-				return r&&l ? 1 : 0;
+				return l&&r;
 			}
 			if(t.operator == "or"){
-				return r||l ? 1 : 0;
+				return l||r;
 			}
 			if(t.operator == "=="){
-				return r==l ? 1 : 0;
+				return l==r ? 1 : 0;
 			}
 			if(t.operator == "~="){
-				return r!=l ? 1 : 0;
+				return l!=r ? 1 : 0;
 			}
 			if(t.operator == "<"){
-				return r<l ? 1 : 0;
+				return l<r ? 1 : 0;
 			}
 			if(t.operator == "<="){
-				return r<=l ? 1 : 0;
+				return l<=r ? 1 : 0;
 			}
 			if(t.operator == ">="){
-				return r>=l ? 1 : 0;
+				return l>=r ? 1 : 0;
 			}
 			if(t.operator == ">"){
-				return r>l ? 1 : 0;
+				return l>r ? 1 : 0;
 			}
 			if(t.operator == "+"){
-				return r+l;
+				return l+r;
 			}
 			if(t.operator == "|"){
-				return r|l;
+				return l|r;
 			}
 			if(t.operator == "-"){
-				return r-l;
+				return l-r;
 			}
 			if(t.operator == "*"){
-				return r*l;
+				return l*r;
 			}
 			if(t.operator == "/" || t.operator == "//"){
-				return parseInt(r/l);
+				return parseInt(l/r);
 			}
 			if(t.operator == "%"){
-				return r%l;
+				return l%r;
 			}
 			if(t.operator == "&"){
-				return r&l;
+				return l&r;
 			}
 			if(t.operator == ">>"){
-				return r>>l;
+				return l>>r;
 			}
 			if(t.operator == "<<"){
-				return r<<l;
+				return l<<r;
 			}
 		}
 		return null;

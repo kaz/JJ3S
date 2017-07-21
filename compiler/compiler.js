@@ -143,59 +143,7 @@ const compile = abs_syn_tree => {
 			t.push("LDA "+find_var(ast.name));
 			t.push("BSA F_PUSH");
 		}
-		else if(ast.type == "LogicalExpression"){
-			code_gen(ast.left, t);
-			code_gen(ast.right, t);
-			
-			if(ast.operator == "and"){
-				const [ln,lo,lf,le] = gen_label(4);
-				t.push("BSA F_POP");
-				t.push("STA R_T1");
-				t.push("BSA F_POP");
-				t.push("SZA");
-				t.push("BUN "+ln);
-				t.push("BUN "+lf);
-				t.push(ln+","); //next
-				t.push("LDA R_T1");
-				t.push("SZA");
-				t.push("BUN "+lo);
-				t.push("BUN "+lf);
-				t.push(lo+","); //ok
-				t.push("CLA");
-				t.push("INC");
-				t.push("BUN "+le);
-				t.push(lf+","); //fail
-				t.push("CLA");
-				t.push(le+","); //end
-			}
-			else if(ast.operator == "or"){
-				const [ln,lo,lf,le] = gen_label(4);
-				t.push("BSA F_POP");
-				t.push("STA R_T1");
-				t.push("BSA F_POP");
-				t.push("SZA");
-				t.push("BUN "+lo);
-				t.push("BUN "+ln);
-				t.push(ln+","); //next
-				t.push("LDA R_T1");
-				t.push("SZA");
-				t.push("BUN "+lo);
-				t.push("BUN "+lf);
-				t.push(lo+","); //ok
-				t.push("CLA");
-				t.push("INC");
-				t.push("BUN "+le);
-				t.push(lf+","); //fail
-				t.push("CLA");
-				t.push(le+","); //end
-			}
-			else {
-				throw new Error("Unknown binop: "+ast.operator);
-			}
-			
-			t.push("BSA F_PUSH");
-		}
-		else if(ast.type == "BinaryExpression"){
+		else if(ast.type == "BinaryExpression" || ast.type == "LogicalExpression"){
 			code_gen(ast.left, t);
 			code_gen(ast.right, t);
 			
@@ -379,46 +327,21 @@ const compile = abs_syn_tree => {
 				t.push(l4+",");
 			}
 			else if(ast.operator == "and"){
-				const [ln,lo,lf,le] = gen_label(4);
 				t.push("BSA F_POP");
 				t.push("STA R_T1");
 				t.push("BSA F_POP");
 				t.push("SZA");
-				t.push("BUN "+ln);
-				t.push("BUN "+lf);
-				t.push(ln+","); //next
 				t.push("LDA R_T1");
-				t.push("SZA");
-				t.push("BUN "+lo);
-				t.push("BUN "+lf);
-				t.push(lo+","); //ok
-				asm.add("CLA");
-				asm.add("INC");
-				t.push("BUN "+l4);
-				t.push(lf+","); //fail
-				asm.add("CLA");
-				t.push(l4+","); //end
 			}
 			else if(ast.operator == "or"){
-				const [ln,lo,lf,le] = gen_label(4);
+				const [l] = gen_label(1);
 				t.push("BSA F_POP");
 				t.push("STA R_T1");
 				t.push("BSA F_POP");
 				t.push("SZA");
-				t.push("BUN "+lo);
-				t.push("BUN "+ln);
-				t.push(ln+","); //next
+				t.push("BUN "+l);
 				t.push("LDA R_T1");
-				t.push("SZA");
-				t.push("BUN "+lo);
-				t.push("BUN "+lf);
-				t.push(lo+","); //ok
-				asm.add("CLA");
-				asm.add("INC");
-				t.push("BUN "+l4);
-				t.push(lf+","); //fail
-				asm.add("CLA");
-				t.push(l4+","); //end
+				t.push(l+",")
 			}
 			else {
 				throw new Error("Unknown binop: "+ast.operator);
