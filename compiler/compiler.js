@@ -9,18 +9,19 @@ const compile = abs_syn_tree => {
 	let gCnt = 0;
 
 	const env_vars = {};
-	const env_stack = ["VAR_GLOBAL"];
+	const env_stack = ["VAR_GLOB"];
 	const current_env = _ => env_stack[env_stack.length-1];
 	const exit_env = _ => env_stack.pop();
-	const enter_env = _ => env_stack.push("VAR_E"+(gCnt++));
+	const enter_env = _ => env_stack.push("VAR_ENV"+(gCnt++));
 	
+	const __find_var = (name, local) => env_stack.slice(local ? 1 : 0).map(e => e+"_"+name).filter(e => e in env_vars).pop();
 	const find_var = name => {
-		const label = env_stack.map(e => e+"_"+name).filter(e => e in env_vars).pop();
+		const label = __find_var(name, false);
 		return label || assign_var(name, false);
 	};
 	const assign_var = (name, local) => {
 		const label = (local ? current_env() : env_stack[0])+"_"+name;
-		return env_vars[label] = label;
+		return __find_var(name, local) || (env_vars[label] = label);
 	};
 	
 	const gen_label = (num, prefix = "L_SYS_") => "A".repeat(num).split("").map(e => prefix+(gCnt++));

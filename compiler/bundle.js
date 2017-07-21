@@ -2286,18 +2286,19 @@ const compile = abs_syn_tree => {
 	let gCnt = 0;
 
 	const env_vars = {};
-	const env_stack = ["VAR_GLOBAL"];
+	const env_stack = ["VAR_GLOB"];
 	const current_env = _ => env_stack[env_stack.length-1];
 	const exit_env = _ => env_stack.pop();
-	const enter_env = _ => env_stack.push("VAR_E"+(gCnt++));
+	const enter_env = _ => env_stack.push("VAR_ENV"+(gCnt++));
 	
+	const __find_var = (name, local) => env_stack.slice(local ? 1 : 0).map(e => e+"_"+name).filter(e => e in env_vars).pop();
 	const find_var = name => {
-		const label = env_stack.map(e => e+"_"+name).filter(e => e in env_vars).pop();
+		const label = __find_var(name, false);
 		return label || assign_var(name, false);
 	};
 	const assign_var = (name, local) => {
 		const label = (local ? current_env() : env_stack[0])+"_"+name;
-		return env_vars[label] = label;
+		return __find_var(name, local) || (env_vars[label] = label);
 	};
 	
 	const gen_label = (num, prefix = "L_SYS_") => "A".repeat(num).split("").map(e => prefix+(gCnt++));
@@ -2970,9 +2971,16 @@ BX,	HEX FFEF
 Q,	DEC 0
 R,	DEC 0
 
+R_T0,  HEX 0
 R_T1,  HEX 0
 R_T2,  HEX 0
 R_T3,  HEX 0
+R_T4,  HEX 0
+R_T5,  HEX 0
+R_T6,  HEX 0
+R_T7,  HEX 0
+R_T8,  HEX 0
+R_T9,  HEX 0
 
 R_ESP, SYM STACK
 
@@ -3120,7 +3128,7 @@ const optimizeCode = code => {
 				if(cm[1] == "LDA" && nm[1] == "STA"){
 					t[i] = t[i+1] = null;
 				}
-				if(cm[1] == "STA" && nm[1] == "LDA"){
+				else if(cm[1] == "STA" && nm[1] == "LDA"){
 					t[i+1] = null;
 				}
 			}
@@ -3161,23 +3169,60 @@ const optimizeCode = code => {
 		}
 	};
 	
-	const opt = t => {
+	// よりクロック数の少ない命令に置き換え
+	const opt_replace_inst = (t, i) => {
+		if(t[i] == "LDA C_VAL_P_0"){
+			t[i] = "CLA";
+		}
+		else if(t[i] == "ADD C_VAL_P_1"){
+			t[i] = "INC";
+		}
+	};
+	
+	// スタックの代わりにレジスタを利用
+	const opt_pseudo_stack = (t, i) => {
+		if(!/^BSA F_PUSH$/.test(t[i])){
+			return;
+		}
+		
+		const used_reg = [];
+		for(let k = i+1; k < t.length; k++){
+			const m = t[k].match(/R_T(\d)$/);
+			if(m){
+				used_reg.push(parseInt(m[1]));
+				continue;
+			}
+			
+			if(/^BSA F_POP$/.test(t[k])){
+				const reg = [0,1,2,3,4,5,6,7,8,9].filter(r => !used_reg.some(u => u == r)).shift();
+				if(reg !== undefined){
+					t[i] = "STA R_T"+reg;
+					t[k] = "LDA R_T"+reg;
+				}
+				break;
+			}
+			
+			if(/^(BUN|BSA)/.test(t[k]) || /,/.test(t[k])){
+				break;
+			}
+		}
+	};
+	
+	// 最大まで最適化
+	const opt = orig => {
+		let t = [].concat(orig);
 		t.forEach((_, i) => {
 			opt_del_push_pop(t, i);
 			opt_del_lda_sta(t, i);
 			opt_self_assign(t, i);
+			opt_replace_inst(t, i);
+			opt_pseudo_stack(t, i);
 		});
-		return t.filter(e => e);
+		t = t.filter(e => e);
+		return t.some((v, i) => orig[i] != v) ? opt(t) : t;
 	};
 	
-	// 最大まで最適化
-	let len;
-	do {
-		len = code.length;
-		code = opt(code);
-	}while(len - code.length);
-	
-	return code;
+	return opt(code);
 };
 
 module.exports = {optimizeTree, optimizeCode};
