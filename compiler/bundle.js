@@ -83,16 +83,16 @@ const optimizer = __webpack_require__(7);
 
 module.exports = (lua_user_code, debug = _ => 0) => {
 	const rawTree = parser.parse(lua_user_code, {luaVersion: "5.3"});
-	debug("<<<raw>>>");
+	debug("<<< original tree >>>");
 	debug(JSON.stringify(rawTree, null, 2));
-	
-	const tree = optimizer.optimizeTree(rawTree);
-	debug("<<<optiized>>>");
+
+	const tree = optimizer.optimize_syntax_tree(rawTree);
+	debug("<<< optiized tree >>>");
 	debug(JSON.stringify(tree, null, 2));
 
 	const rawCode = compiler.compile(tree);
-	const code = optimizer.optimizeCode(rawCode);
-	debug(`optimized! ${rawCode.length} -> ${code.length}`);
+	const code = optimizer.optimize_labels(optimizer.optimize_instructions(rawCode));
+	debug(`omitted ${rawCode.length - code.length} lines`);
 
 	return code.map(e => /,/.test(e) ? e : `\t${e}`).join("\n");
 };
@@ -2451,7 +2451,8 @@ const compile = abs_syn_tree => {
 			const l = "F_USR_"+ast.identifier.name;
 			
 			enter_env();
-			asm_sub.push(l+",\tHEX 0");
+			asm_sub.push(l+",");
+			asm_sub.push("HEX 0");
 			[].concat(ast.parameters).reverse().forEach(p => {
 				asm_sub.push("BSA F_POP");
 				asm_sub.push("STA "+assign_var(p.name, true));
@@ -3247,12 +3248,12 @@ const delete_operator_loop = tree => {
 	return walk_tree(tree);
 };
 
-const optimizeTree = tree => {
+const optimize_syntax_tree = tree => {
 	const orig = JSON.stringify(tree);
 	tree = constant_folding(tree);
 	tree = constant_propagation(tree);
 	tree = delete_operator_loop(tree);
-	return JSON.stringify(tree) == orig ? tree : optimizeTree(tree);
+	return JSON.stringify(tree) == orig ? tree : optimize_syntax_tree(tree);
 };
 
 // 無駄なBUNを削除
@@ -3385,7 +3386,7 @@ const opt_pseudo_stack = (t, i) => {
 	}
 };
 
-const optimizeCode = code => {
+const optimize_instructions = code => {
 	const orig = [].concat(code);
 	code.forEach((_, i) => {
 		opt_del_bun(code, i);
@@ -3397,10 +3398,46 @@ const optimizeCode = code => {
 		opt_pseudo_stack(code, i);
 	});
 	code = code.filter(e => e);
-	return code.some((v, i) => orig[i] != v) ? optimizeCode(code) : code;
+	return code.some((v, i) => orig[i] != v) ? optimize_instructions(code) : code;
 };
 
-module.exports = {optimizeTree, optimizeCode};
+const merge_labels = code => {
+	const result = [];
+	code.forEach(inst => {
+		const m = /^(.+),$/.exec(inst);
+		if(m){
+			if(Array.isArray(result[0])){
+				result[0].push(m[1]);
+				return;
+			}
+			inst = [m[1]];
+		}
+		result.unshift(inst);
+	});
+	return result.reverse();
+};
+const reassign_labels = (code, prefix = "L_") => {
+	let index = 0;
+	const assign_list = [];
+	return code.map(e => {
+		if(Array.isArray(e)){
+			const label = prefix+(index++);
+			e.forEach(l => assign_list.push({
+				regex: new RegExp(l+"( I)?$"),
+				replace: label+"$1"
+			}));
+			return label+",";
+		}
+		return e;
+	}).map(e => {
+		assign_list.forEach(assign => e = e.replace(assign.regex, assign.replace));
+		return e;
+	});
+};
+
+const optimize_labels = code => reassign_labels(merge_labels(code));
+
+module.exports = {optimize_syntax_tree, optimize_instructions, optimize_labels};
 
 
 /***/ })

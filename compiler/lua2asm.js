@@ -6,16 +6,16 @@ const optimizer = require("./optimizer");
 
 module.exports = (lua_user_code, debug = _ => 0) => {
 	const rawTree = parser.parse(lua_user_code, {luaVersion: "5.3"});
-	debug("<<<raw>>>");
+	debug("<<< original tree >>>");
 	debug(JSON.stringify(rawTree, null, 2));
-	
-	const tree = optimizer.optimizeTree(rawTree);
-	debug("<<<optiized>>>");
+
+	const tree = optimizer.optimize_syntax_tree(rawTree);
+	debug("<<< optiized tree >>>");
 	debug(JSON.stringify(tree, null, 2));
 
 	const rawCode = compiler.compile(tree);
-	const code = optimizer.optimizeCode(rawCode);
-	debug(`optimized! ${rawCode.length} -> ${code.length}`);
+	const code = optimizer.optimize_labels(optimizer.optimize_instructions(rawCode));
+	debug(`omitted ${rawCode.length - code.length} lines`);
 
 	return code.map(e => /,/.test(e) ? e : `\t${e}`).join("\n");
 };

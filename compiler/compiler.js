@@ -176,7 +176,8 @@ const compile = abs_syn_tree => {
 			const l = "F_USR_"+ast.identifier.name;
 			
 			enter_env();
-			asm_sub.push(l+",\tHEX 0");
+			asm_sub.push(l+",");
+			asm_sub.push("HEX 0");
 			[].concat(ast.parameters).reverse().forEach(p => {
 				asm_sub.push("BSA F_POP");
 				asm_sub.push("STA "+assign_var(p.name, true));
