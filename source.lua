@@ -52,6 +52,7 @@ small_score = 0
 small_amount = 240
 
 cleared = 0
+timer = 0
 
 enemy_walk_mode = 0
 
@@ -101,7 +102,6 @@ function pacman_move()
     end
 end
 
-timer = 0
 function flash_item(x, y)
     if map[x+y*31] == 0 or timer & 4 then
         c = 0
@@ -176,6 +176,7 @@ function enemy_wait(index)
         enemy_rot[index] = 3 - rot
     end
 end
+
 function ishit(pacman_x, pacman_y)
     for i = 0, 3 do
         tmp=enemy_x[i]+enemy_y[i]-pacman_x-pacman_y
@@ -184,7 +185,25 @@ function ishit(pacman_x, pacman_y)
         end
     end
 end
+
 function Edebuff()
+end
+
+function restart_enemy()
+    enemy_x[0] = 248
+    enemy_x[1] = 296
+    enemy_x[2] = 296
+    enemy_x[3] = 296
+    enemy_y[0] = 224
+    enemy_y[1] = 224
+    enemy_y[2] = 200-8
+    enemy_y[3] = 248+8
+    enemy_rot[0] = 2
+    enemy_rot[1] = 3
+    enemy_rot[2] = 0
+    enemy_rot[3] = 0
+    enemy_count = 1
+    enemy_out = 0
 end
 
 -- Main routine
@@ -201,6 +220,8 @@ pacman_x = 16 * (x_gap + 23) - 8
 pacman_y = 16 * (y_gap + 13)
 pacman_rot = 1
 pacman_anim = 0
+
+restart_enemy()
 
 ex3.draw_dynamic_sprite(8*2, pacman_rot, pacman_x, pacman_y, 8)
 for i = 0, 3 do
@@ -298,7 +319,7 @@ end
 for i = 0, 3 do
     ex3.draw_dynamic_sprite(20+i, 0, -50+i*32+pacman_x, -40+pacman_y, i)
 end
-for i = 0, 4 do
+for i = 0, 3 do
     ex3.draw_dynamic_sprite(0, 0, 0, 0, i+4)
 end
 
@@ -330,35 +351,6 @@ for t = 0, 56 do
     ex3.sleep()
 end
 
--- clear wait
-for t = 0, 40 do
-    ex3.sleep()
-end
-
--- CLEAR
-for i = 0, 4 do
-    ex3.draw_static_sprite(32+3+i, 0, 12+i+x_gap, 18+y_gap)
-end
-
--- clear animation
-count = 0
-for t = 0, 56 do
-    if t == (t >> 3) * 8 then
-        count = count + 32
-        if count == 64 then count = 0 end
-    end
-    for y = 0, 27 do
-        for x = 0, 30 do
-            m = map[x+y*31]
-            if m & 8 == 8 then
-                ex3.draw_static_sprite(m+count, 0, x+x_gap, y+y_gap)
-            end
-        end
-    end
-    
-    ex3.sleep()
-end
-
 -- wait
 while 1 do
     ex3.sleep()
@@ -366,7 +358,7 @@ end
 
 
 ::gameover::
-    for i = 0, 60 do
+    for i = 0, 30 do
         ex3.sleep()
     end
     for i = 0, 11 do
