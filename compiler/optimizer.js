@@ -115,7 +115,7 @@ const constant_folding = tree => {
 // 演算子適用時のループを削減
 const delete_operator_loop = tree => {
 	const walk_tree = t => {
-		if(typeof t != "object"){
+		if(typeof t != "object" || !t){
 			return t;
 		}
 		if((t.operator == "^" || t.operator == "<<" || t.operator == ">>") && t.right.type == "NumericLiteral"){
