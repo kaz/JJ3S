@@ -3133,6 +3133,24 @@ const optimizeTree = tree => {
 };
 
 const optimizeCode = code => {
+	// 無駄なBUNを削除
+	const opt_del_bun = (t, i) => {
+		const m = (t[i] || "").match(/^BUN (.+)$/);
+		if(m){
+			for(let k = i+1; k < t.length; k++){
+				const m2 = (t[k] || "").match(/^(.+),$/);
+				if(m2){
+					if(m[1] == m2[1]){
+						t[i] = null;
+						break;
+					}
+				}else{
+					break;
+				}
+			}
+		}
+	};
+	
 	// 無駄なPUSH/POPを削除
 	const opt_del_push_pop = (t, i) => {
 		if(t[i] == "BSA F_PUSH" && t[i+1] == "BSA F_POP" || t[i] == "BSA F_POP" && t[i+1] == "BSA F_PUSH"){
@@ -3232,6 +3250,7 @@ const optimizeCode = code => {
 	const opt = orig => {
 		let t = [].concat(orig);
 		t.forEach((_, i) => {
+			opt_del_bun(t, i);
 			opt_del_push_pop(t, i);
 			opt_del_lda_sta(t, i);
 			opt_self_assign(t, i);
