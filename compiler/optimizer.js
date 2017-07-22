@@ -1,7 +1,8 @@
 "use strict";
 
-const constantFolding = tree => {
-	const scanTree = t => {
+// 定数の畳み込み
+const constant_folding = tree => {
+	const fold_tree = t => {
 		if(!t){
 			return null;
 		}
@@ -9,7 +10,7 @@ const constantFolding = tree => {
 			return t.value;
 		}
 		if(t.type == "UnaryExpression"){
-			const a = scanTree(t.argument);
+			const a = fold_tree(t.argument);
 			if(a === null){
 				return null;
 			}
@@ -24,7 +25,7 @@ const constantFolding = tree => {
 			}
 		}
 		if(t.type == "BinaryExpression" || t.type == "LogicalExpression"){
-			const [l,r] = [scanTree(t.left), scanTree(t.right)];
+			const [l,r] = [fold_tree(t.left), fold_tree(t.right)];
 			if(t.operator == "and" && l !== null && !l){
 				return l;
 			}
@@ -94,13 +95,13 @@ const constantFolding = tree => {
 		}
 		return null;
 	};
-	const fixTree = t => {
+	const walk_tree = t => {
 		if(typeof t != "object"){
 			return t;
 		}
 		for(let k in t){
-			const v = scanTree(t[k]);
-			t[k] = (v === null) ? fixTree(t[k]) : {
+			const v = fold_tree(t[k]);
+			t[k] = (v === null) ? walk_tree(t[k]) : {
 				"type": "NumericLiteral",
 				"value": v,
 				"raw": ""+v,
@@ -108,12 +109,29 @@ const constantFolding = tree => {
 		}
 		return t;
 	};
-	return fixTree(tree);
+	return walk_tree(tree);
+};
+
+// 演算子適用時のループを削減
+const delete_operator_loop = tree => {
+	const walk_tree = t => {
+		if(typeof t != "object"){
+			return t;
+		}
+		if((t.operator == "^" || t.operator == "<<" || t.operator == ">>") && t.right.type == "NumericLiteral"){
+			t.opt_loop = t.right.value;
+		}
+		for(let k in t){
+			t[k] = walk_tree(t[k]);
+		}
+		return t;
+	};
+	return walk_tree(tree);
 };
 
 const optimizeTree = tree => {
-	// 定数の畳み込み
-	tree = constantFolding(tree);
+	tree = constant_folding(tree);
+	tree = delete_operator_loop(tree);
 	return tree;
 };
 

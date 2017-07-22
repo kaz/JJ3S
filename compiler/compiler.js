@@ -255,7 +255,31 @@ const compile = abs_syn_tree => {
 				t.push("BSA F_PUSH");
 			}
 		}
-		else if(ast.type == "BinaryExpression" || ast.type == "LogicalExpression"){
+		else if(ast.type == "BinaryExpression" && "opt_loop" in ast){
+			code_gen(ast.left, t);
+			t.push("BSA F_POP");
+			
+			if(ast.operator == ">>" || ast.operator == "<<"){
+				for(let i = 0; i < ast.opt_loop; i++){
+					t.push("CLE");
+					t.push(ast.operator == ">>" ? "CIR" : "CIL");
+				}
+			}
+			else if(ast.operator == "^"){
+				t.push("STA R_T1");
+				t.push("LDA "+const_value(1));
+				
+				for(let i = 0; i < ast.opt_loop; i++){
+					t.push("MUL R_T1");
+				}
+			}
+			else {
+				throw new Error("Unknown binop: "+ast.operator);
+			}
+			
+			t.push("BSA F_PUSH");
+		}
+		else if(ast.type == "BinaryExpression"){
 			code_gen(ast.left, t);
 			code_gen(ast.right, t);
 			
