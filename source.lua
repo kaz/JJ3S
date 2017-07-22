@@ -32,15 +32,15 @@ map = {
 x_gap = 5
 y_gap = 1
 
-
-pacman_x = 16 * (x_gap + 23) - 8
-pacman_y = 16 * (y_gap + 13)
-pacman_rot = 1
+pacman_x = 0
+pacman_y = 0
+pacman_rot = 0
 pacman_anim = 0
+
 pacman_spd = 4
 
 small_score = 0
-small_amount = 10 -- 240
+small_amount = 240
 
 cleared = 0
 
@@ -90,6 +90,7 @@ function pacman_move()
     end
 end
 
+timer = 0
 function flash_item(x, y)
     if map[x+y*31] == 0 or timer & 4 then
         c = 0
@@ -107,7 +108,15 @@ for y = 0, 27 do
         ex3.draw_static_sprite(map[x+y*31], 0, x+x_gap, y+y_gap)
     end
 end
-ex3.draw_dynamic_sprite(8*2+anim_index, pacman_rot, pacman_x, pacman_y, 0)
+
+::restart::
+
+pacman_x = 16 * (x_gap + 23) - 8
+pacman_y = 16 * (y_gap + 13)
+pacman_rot = 1
+pacman_anim = 0
+
+ex3.draw_dynamic_sprite(8*2, pacman_rot, pacman_x, pacman_y, 0)
 
 -- READY
 for i = 0, 4 do
@@ -123,7 +132,7 @@ for i = 0, 4 do
     ex3.draw_static_sprite(0, 0, 12+i+x_gap, 18+y_gap)
 end
 
-timer = 0
+-- timer = 0
 while 1 do
     -- receive input
     if turnable(pacman_x, pacman_y) then
@@ -166,7 +175,11 @@ while 1 do
     ex3.draw_dynamic_sprite(8*2+anim_index, pacman_rot, pacman_x, pacman_y, 0)
 
     ex3.sleep()
-    timer = timer + 1
+
+    -- timer = timer + 1
+    -- if timer == 100 then
+    --     goto gameover
+    -- end
 
     -- end
     if cleared then break end
@@ -204,3 +217,21 @@ end
 while 1 do
     ex3.sleep()
 end
+
+
+::gameover::
+    for i = 0, 60 do
+        ex3.sleep()
+    end
+    for i = 0, 11 do
+        ex3.draw_dynamic_sprite(16+(i>>2), 3, pacman_x, pacman_y, 0)
+        ex3.sleep()
+    end
+    for i = 0, 31 do
+        ex3.draw_dynamic_sprite(24+(i>>2), 0, pacman_x, pacman_y, 0)
+        ex3.sleep()
+    end
+    ex3.draw_dynamic_sprite(0, 0, pacman_x, pacman_y, 0)
+    ex3.sleep()
+
+    goto restart
