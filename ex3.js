@@ -217,11 +217,6 @@ ex3.load = (src,macro,log)=>{
         break;
       }else break;
     }while(1);
-    if(curAddr>=4096){
-      failed = true;
-      log("Memory limit exceeded");
-      break;
-    }
   }
   for(let i=0;i<buffer.length;i++){
     if(buffer[i].delay!==undefined){
@@ -234,7 +229,11 @@ ex3.load = (src,macro,log)=>{
     }
     //console.log(hex3(i),hex4(buffer[i]));
   }
-  if(!failed)log("Ready.");
+  if(curAddr>=4096){
+    failed = true;
+    log("Memory limit exceeded (" + curAddr + "/4096 words required)");
+  }
+  if(!failed)log("Ready. (" + curAddr + "/4096 words)");
   else buffer = [];
 };
 
