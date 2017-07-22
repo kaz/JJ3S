@@ -2478,7 +2478,7 @@ const compile = abs_syn_tree => {
 					t.push("STA R_T1 I");
 				}
 				else {
-					throw new Error("Unknown variable type: "+ast.type);
+					throw new Error("Unknown variable type: "+va.type);
 				}
 			});
 		}
@@ -2608,12 +2608,6 @@ const compile = abs_syn_tree => {
 				t.push("BUN "+ls);
 				t.push(le+",");
 				t.push("LDA R_T3");
-			}
-			else if(ast.operator == "/" || ast.operator == "//" || ast.operator == "%"){
-				t.push("LDA "+const_value(ast.operator == "%" ? 1 : 0));
-				t.push("BSA F_PUSH");
-				t.push("BSA F_DIVMOD");
-				t.push("BSA F_POP");
 			}
 			else if(ast.operator == "&"){
 				t.push("BSA F_POP");
@@ -2941,98 +2935,12 @@ F_POP,
 	LDA R_ESP I
 	BUN F_POP I
 
-F_DIVMOD,
-	HEX 0
-	BSA F_POP
-	STA R_T1
-	BSA F_POP
-	STA D
-	BSA F_POP
-	STA S
-	CLA
-	STA SH
-	LDA BX
-	STA B
-Loop,
-	LDA B
-	INC
-	STA B
-	SZA
-	BUN Act
-	BUN End
-Act,
-	LDA Q
-	CLE
-	CIL
-	STA Q
-	BSA CIL_N
-	BSA N_SUB_D
-	SZE
-	BUN Plus
-Minus,
-	BSA N_ADD_D
-	BUN Loop
-Plus,
-	LDA Q
-	INC
-	STA Q
-	BUN Loop
-End,
-	LDA SH
-	STA R
-	LDA R_T1
-	SZA
-	BUN Ret_Remindrr
-	LDA Q
-	BUN Return
-Ret_Remindrr,
-	LDA R
-Return,
-	BSA F_PUSH
-	BUN F_DIVMOD I
-CIL_N,
-	HEX 0
-	CLE
-	LDA S
-	CIL
-	STA S
-	LDA SH
-	CIL
-	STA SH
-	BUN CIL_N I
-N_ADD_D,
-	HEX 0
-	LDA D
-	ADD SH
-	STA SH
-	BUN N_ADD_D I
-N_SUB_D,
-	HEX 0
-	LDA D
-	CMA
-	INC
-	ADD SH
-	STA SH
-	BUN N_SUB_D I
-
-S,	DEC 0
-D,	DEC 0
-SH, DEC 0
-B,	HEX FFEF
-BX,	HEX FFEF
-Q,	DEC 0
-R,	DEC 0
-
 R_T0,  HEX 0
 R_T1,  HEX 0
 R_T2,  HEX 0
 R_T3,  HEX 0
 R_T4,  HEX 0
 R_T5,  HEX 0
-R_T6,  HEX 0
-R_T7,  HEX 0
-R_T8,  HEX 0
-R_T9,  HEX 0
 
 R_ESP, SYM STACK
 
@@ -3158,17 +3066,58 @@ const constant_folding = tree => {
 	return walk_tree(tree);
 };
 
+// 定数伝播
+const constant_propagation = tree => {
+	const assign = {};
+	
+	const walk_tree_find_assign = t => {
+		if(typeof t != "object" || !t){
+			return;
+		}
+		if(t.type == "AssignmentStatement" || t.type == "LocalStatement"){
+			t.variables.forEach((v, i) => {
+				if(!(v.name in assign)){
+					assign[v.name] = [];
+				}
+				assign[v.name].push(t.init[i]);
+			});
+		}
+		for(let k in t){
+			walk_tree_find_assign(t[k]);
+		}
+	};
+	
+	walk_tree_find_assign(tree);
+	const constants = Object.keys(assign).filter(k => assign[k].length == 1 && assign[k][0] && assign[k][0].type == "NumericLiteral");
+	
+	const walk_tree_prop_const = t => {
+		if(t && typeof t == "object"){
+			if(t.type == "Identifier" && constants.some(e => e == t.name)){
+				t = assign[t.name][0];
+			}
+			for(let k in t){
+				if((t.type == "AssignmentStatement" || t.type == "LocalStatement") && k == "variables"){
+					continue;
+				}
+				t[k] = walk_tree_prop_const(t[k]);
+			}
+		}
+		return t;
+	};
+	
+	return walk_tree_prop_const(tree);
+};
+
 // 演算子適用時のループを削減
 const delete_operator_loop = tree => {
 	const walk_tree = t => {
-		if(typeof t != "object" || !t){
-			return t;
-		}
-		if((t.operator == "^" || t.operator == "<<" || t.operator == ">>") && t.right.type == "NumericLiteral"){
-			t.opt_loop = t.right.value;
-		}
-		for(let k in t){
-			t[k] = walk_tree(t[k]);
+		if(t && typeof t == "object"){
+			if((t.operator == "^" || t.operator == "<<" || t.operator == ">>") && t.right.type == "NumericLiteral"){
+				t.opt_loop = t.right.value;
+			}
+			for(let k in t){
+				t[k] = walk_tree(t[k]);
+			}
 		}
 		return t;
 	};
@@ -3176,12 +3125,32 @@ const delete_operator_loop = tree => {
 };
 
 const optimizeTree = tree => {
+	const orig = JSON.stringify(tree);
 	tree = constant_folding(tree);
+	tree = constant_propagation(tree);
 	tree = delete_operator_loop(tree);
-	return tree;
+	return JSON.stringify(tree) == orig ? tree : optimizeTree(tree);
 };
 
 const optimizeCode = code => {
+	// 無駄なBUNを削除
+	const opt_del_bun = (t, i) => {
+		const m = (t[i] || "").match(/^BUN (.+)$/);
+		if(m){
+			for(let k = i+1; k < t.length; k++){
+				const m2 = (t[k] || "").match(/^(.+),$/);
+				if(m2){
+					if(m[1] == m2[1]){
+						t[i] = null;
+						break;
+					}
+				}else{
+					break;
+				}
+			}
+		}
+	};
+	
 	// 無駄なPUSH/POPを削除
 	const opt_del_push_pop = (t, i) => {
 		if(t[i] == "BSA F_PUSH" && t[i+1] == "BSA F_POP" || t[i] == "BSA F_POP" && t[i+1] == "BSA F_PUSH"){
@@ -3264,7 +3233,7 @@ const optimizeCode = code => {
 			}
 			
 			if(/^BSA F_POP$/.test(t[k])){
-				const reg = [0,1,2,3,4,5,6,7,8,9].filter(r => !used_reg.some(u => u == r)).shift();
+				const reg = [0,1,2,3,4,5].filter(r => !used_reg.some(u => u == r)).shift();
 				if(reg !== undefined){
 					t[i] = "STA R_T"+reg;
 					t[k] = "LDA R_T"+reg;
@@ -3278,10 +3247,10 @@ const optimizeCode = code => {
 		}
 	};
 	
-	// 最大まで最適化
 	const opt = orig => {
 		let t = [].concat(orig);
 		t.forEach((_, i) => {
+			opt_del_bun(t, i);
 			opt_del_push_pop(t, i);
 			opt_del_lda_sta(t, i);
 			opt_self_assign(t, i);

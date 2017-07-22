@@ -203,7 +203,7 @@ const compile = abs_syn_tree => {
 					t.push("STA R_T1 I");
 				}
 				else {
-					throw new Error("Unknown variable type: "+ast.type);
+					throw new Error("Unknown variable type: "+va.type);
 				}
 			});
 		}
@@ -333,12 +333,6 @@ const compile = abs_syn_tree => {
 				t.push("BUN "+ls);
 				t.push(le+",");
 				t.push("LDA R_T3");
-			}
-			else if(ast.operator == "/" || ast.operator == "//" || ast.operator == "%"){
-				t.push("LDA "+const_value(ast.operator == "%" ? 1 : 0));
-				t.push("BSA F_PUSH");
-				t.push("BSA F_DIVMOD");
-				t.push("BSA F_POP");
 			}
 			else if(ast.operator == "&"){
 				t.push("BSA F_POP");

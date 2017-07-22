@@ -112,17 +112,58 @@ const constant_folding = tree => {
 	return walk_tree(tree);
 };
 
+// 定数伝播
+const constant_propagation = tree => {
+	const assign = {};
+	
+	const walk_tree_find_assign = t => {
+		if(typeof t != "object" || !t){
+			return;
+		}
+		if(t.type == "AssignmentStatement" || t.type == "LocalStatement"){
+			t.variables.forEach((v, i) => {
+				if(!(v.name in assign)){
+					assign[v.name] = [];
+				}
+				assign[v.name].push(t.init[i]);
+			});
+		}
+		for(let k in t){
+			walk_tree_find_assign(t[k]);
+		}
+	};
+	
+	walk_tree_find_assign(tree);
+	const constants = Object.keys(assign).filter(k => assign[k].length == 1 && assign[k][0] && assign[k][0].type == "NumericLiteral");
+	
+	const walk_tree_prop_const = t => {
+		if(t && typeof t == "object"){
+			if(t.type == "Identifier" && constants.some(e => e == t.name)){
+				t = assign[t.name][0];
+			}
+			for(let k in t){
+				if((t.type == "AssignmentStatement" || t.type == "LocalStatement") && k == "variables"){
+					continue;
+				}
+				t[k] = walk_tree_prop_const(t[k]);
+			}
+		}
+		return t;
+	};
+	
+	return walk_tree_prop_const(tree);
+};
+
 // 演算子適用時のループを削減
 const delete_operator_loop = tree => {
 	const walk_tree = t => {
-		if(typeof t != "object" || !t){
-			return t;
-		}
-		if((t.operator == "^" || t.operator == "<<" || t.operator == ">>") && t.right.type == "NumericLiteral"){
-			t.opt_loop = t.right.value;
-		}
-		for(let k in t){
-			t[k] = walk_tree(t[k]);
+		if(t && typeof t == "object"){
+			if((t.operator == "^" || t.operator == "<<" || t.operator == ">>") && t.right.type == "NumericLiteral"){
+				t.opt_loop = t.right.value;
+			}
+			for(let k in t){
+				t[k] = walk_tree(t[k]);
+			}
 		}
 		return t;
 	};
@@ -130,12 +171,32 @@ const delete_operator_loop = tree => {
 };
 
 const optimizeTree = tree => {
+	const orig = JSON.stringify(tree);
 	tree = constant_folding(tree);
+	tree = constant_propagation(tree);
 	tree = delete_operator_loop(tree);
-	return tree;
+	return JSON.stringify(tree) == orig ? tree : optimizeTree(tree);
 };
 
 const optimizeCode = code => {
+	// 無駄なBUNを削除
+	const opt_del_bun = (t, i) => {
+		const m = (t[i] || "").match(/^BUN (.+)$/);
+		if(m){
+			for(let k = i+1; k < t.length; k++){
+				const m2 = (t[k] || "").match(/^(.+),$/);
+				if(m2){
+					if(m[1] == m2[1]){
+						t[i] = null;
+						break;
+					}
+				}else{
+					break;
+				}
+			}
+		}
+	};
+	
 	// 無駄なPUSH/POPを削除
 	const opt_del_push_pop = (t, i) => {
 		if(t[i] == "BSA F_PUSH" && t[i+1] == "BSA F_POP" || t[i] == "BSA F_POP" && t[i+1] == "BSA F_PUSH"){
@@ -218,7 +279,7 @@ const optimizeCode = code => {
 			}
 			
 			if(/^BSA F_POP$/.test(t[k])){
-				const reg = [0,1,2,3,4,5,6,7,8,9].filter(r => !used_reg.some(u => u == r)).shift();
+				const reg = [0,1,2,3,4,5].filter(r => !used_reg.some(u => u == r)).shift();
 				if(reg !== undefined){
 					t[i] = "STA R_T"+reg;
 					t[k] = "LDA R_T"+reg;
@@ -232,10 +293,10 @@ const optimizeCode = code => {
 		}
 	};
 	
-	// 最大まで最適化
 	const opt = orig => {
 		let t = [].concat(orig);
 		t.forEach((_, i) => {
+			opt_del_bun(t, i);
 			opt_del_push_pop(t, i);
 			opt_del_lda_sta(t, i);
 			opt_self_assign(t, i);
