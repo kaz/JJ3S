@@ -58,7 +58,6 @@ function turnable(x, y)
 end
 
 while 1 do
-    -- アニメーション
     pacman_anim = pacman_anim + 1
     if pacman_anim > 2 then
         pacman_anim = 0
@@ -66,35 +65,25 @@ while 1 do
     
     if turnable(pacman_x, pacman_y) then
         key_r, key_u, key_d, key_l = ex3.get_key_state()
-        if key_r or key_u or key_d or key_l then
-            if key_r and walkable(pacman_x+16+1, pacman_y) then
-                pacman_rot = 2
-            elseif key_u and walkable(pacman_x, pacman_y-1) then
-                pacman_rot = 3
-            elseif key_d and walkable(pacman_x, pacman_y+16+1) then
-                pacman_rot = 1
-            elseif key_l and walkable(pacman_x-1, pacman_y) then
-                pacman_rot = 0
-            end
+        if key_r and walkable(pacman_x+16+1, pacman_y) then
+            pacman_rot = 2
+        elseif key_u and walkable(pacman_x, pacman_y-1) then
+            pacman_rot = 3
+        elseif key_d and walkable(pacman_x, pacman_y+16+1) then
+            pacman_rot = 1
+        elseif key_l and walkable(pacman_x-1, pacman_y) then
+            pacman_rot = 0
         end
     end
     
-    if pacman_rot == 2 then
-        if walkable(pacman_x+16+1, pacman_y) then
-           pacman_x = pacman_x + 2
-        end
-    elseif pacman_rot == 3 then
-        if walkable(pacman_x, pacman_y-1) then
-            pacman_y = pacman_y - 2
-        end
-    elseif pacman_rot == 1 then
-        if walkable(pacman_x, pacman_y+16+1) then
-            pacman_y = pacman_y + 2
-        end
-    elseif pacman_rot == 0 then
-        if walkable(pacman_x-1, pacman_y) then
-           pacman_x = pacman_x - 2
-        end
+    if pacman_rot == 2 and walkable(pacman_x+16+1, pacman_y) then
+        pacman_x = pacman_x + 2
+    elseif pacman_rot == 3 and walkable(pacman_x, pacman_y-1) then
+        pacman_y = pacman_y - 2
+    elseif pacman_rot == 1 and walkable(pacman_x, pacman_y+16+1) then
+        pacman_y = pacman_y + 2
+    elseif pacman_rot == 0 and walkable(pacman_x-1, pacman_y) then
+        pacman_x = pacman_x - 2
     end
     
     ex3.draw_dynamic_sprite(8*2+pacman_anim, pacman_rot, pacman_x, pacman_y, 0)
