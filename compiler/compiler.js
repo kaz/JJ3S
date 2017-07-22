@@ -328,7 +328,7 @@ const compile = abs_syn_tree => {
 			code_gen(ast.left, t);
 			code_gen(ast.right, t);
 			
-			if(ast.operator == "+" || ast.operator == "|"){
+			if(ast.operator == "+"){
 				t.push("BSA F_POP");
 				t.push("STA R_T1");
 				t.push("BSA F_POP");
@@ -378,18 +378,9 @@ const compile = abs_syn_tree => {
 				t.push("BSA F_POP");
 				t.push("AND R_T1");
 			}
-			else if(ast.operator == "~"){
+			else if(ast.operator == "|"){
+				t.push("BSA F_OR");
 				t.push("BSA F_POP");
-				t.push("STA R_T2");
-				t.push("BSA F_POP");
-				t.push("STA R_T1");
-				t.push("CMA");
-				t.push("AND R_T2");
-				t.push("STA R_T3");
-				t.push("LDA R_T2");
-				t.push("CMA");
-				t.push("AND R_T1");
-				t.push("ADD R_T3");
 			}
 			else if(ast.operator == ">>" || ast.operator == "<<"){
 				t.push("BSA F_POP");
