@@ -27,6 +27,8 @@ const compile = abs_syn_tree => {
 		return __find_var(name, local) || (env_vars[label] = label);
 	};
 	
+	const huge_tables = [];
+	
 	const gen_label = (num, prefix = "L_SYS_") => "A".repeat(num).split("").map(e => prefix+(gCnt++));
 	
 	const loop_stack = [];
@@ -195,17 +197,28 @@ const compile = abs_syn_tree => {
 					t.push("STA "+assign_var(va.name, ast.type == "LocalStatement"));
 				}
 				else if(va.type == "IndexExpression"){
+					var name = find_var(va.base.name);
 					code_gen(va.index, t);
-					t.push("BSA F_POP");
-					t.push("ADD "+find_var(va.base.name));
-					t.push("STA R_T1");
-					t.push("BSA F_POP");
-					t.push("STA R_T1 I");
+					if(huge_tables.some(e => e == name)){
+						t.push("LDA "+name);
+						t.push("BSA F_PUSH");
+						t.push("BSA F_WRITE_HUGE_ARRAY");
+					}
+					else{
+						t.push("BSA F_POP");
+						t.push("ADD "+name);
+						t.push("STA R_T1");
+						t.push("BSA F_POP");
+						t.push("STA R_T1 I");
+					}
 				}
 				else {
 					throw new Error("Unknown variable type: "+va.type);
 				}
 			});
+			if(ast.init[0].type == "TableConstructorExpression" && ast.init[0].fields.length > 128){
+				huge_tables.push(find_var(ast.variables[0].name));
+			}
 		}
 		else if(ast.type == "TableConstructorExpression"){
 			const [l] = gen_label(1, "D_TABLE_");
@@ -214,22 +227,42 @@ const compile = abs_syn_tree => {
 			asm_sub.push("SYM "+l);
 			asm_sub.push("DEC "+ast.fields.length);
 			asm_sub.push(l+",");
-			ast.fields.forEach(item => {
+			
+			let fields = ast.fields.map(item => {
 				if(item.value.type != "NumericLiteral"){
 					throw new Error("Table constructor fields must be NumericLiteral: "+item.value.type);
 				}
-				asm_sub.push("DEC "+item.value.value);
+				return item.value.value;
 			});
+			
+			if(fields.length > 128){
+				const f = [];
+				for(let i = 0; i < fields.length; i++){
+					f.push((0xFF & fields[i]) | ((0xFF & (fields[++i] || 0)) << 8));
+				}
+				fields = f;
+			}
+			
+			fields.forEach(v => asm_sub.push("DEC "+v));
 			
 			t.push("LDA "+l+"_PTR");
 			t.push("BSA F_PUSH");
 		}
 		else if(ast.type == "IndexExpression"){
+			var name = find_var(ast.base.name);
 			code_gen(ast.index, t);
-			t.push("BSA F_POP");
-			t.push("ADD "+find_var(ast.base.name));
-			t.push("STA R_T1");
-			t.push("LDA R_T1 I");
+			if(huge_tables.some(e => e == name)){
+				t.push("LDA "+name);
+				t.push("BSA F_PUSH");
+				t.push("BSA F_READ_HUGE_ARRAY");
+				t.push("BSA F_POP");
+			}
+			else{
+				t.push("BSA F_POP");
+				t.push("ADD "+name);
+				t.push("STA R_T1");
+				t.push("LDA R_T1 I");
+			}
 			t.push("BSA F_PUSH");
 		}
 		else if(ast.type == "NumericLiteral"){
