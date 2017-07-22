@@ -261,7 +261,7 @@ const optimizeCode = code => {
 			}
 			
 			if(/^BSA F_POP$/.test(t[k])){
-				const reg = [0,1,2,3,4,5,6,7,8,9].filter(r => !used_reg.some(u => u == r)).shift();
+				const reg = [0,1,2,3,4,5].filter(r => !used_reg.some(u => u == r)).shift();
 				if(reg !== undefined){
 					t[i] = "STA R_T"+reg;
 					t[k] = "LDA R_T"+reg;

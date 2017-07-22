@@ -2609,12 +2609,6 @@ const compile = abs_syn_tree => {
 				t.push(le+",");
 				t.push("LDA R_T3");
 			}
-			else if(ast.operator == "/" || ast.operator == "//" || ast.operator == "%"){
-				t.push("LDA "+const_value(ast.operator == "%" ? 1 : 0));
-				t.push("BSA F_PUSH");
-				t.push("BSA F_DIVMOD");
-				t.push("BSA F_POP");
-			}
 			else if(ast.operator == "&"){
 				t.push("BSA F_POP");
 				t.push("STA R_T1");
@@ -2941,98 +2935,12 @@ F_POP,
 	LDA R_ESP I
 	BUN F_POP I
 
-F_DIVMOD,
-	HEX 0
-	BSA F_POP
-	STA R_T1
-	BSA F_POP
-	STA D
-	BSA F_POP
-	STA S
-	CLA
-	STA SH
-	LDA BX
-	STA B
-Loop,
-	LDA B
-	INC
-	STA B
-	SZA
-	BUN Act
-	BUN End
-Act,
-	LDA Q
-	CLE
-	CIL
-	STA Q
-	BSA CIL_N
-	BSA N_SUB_D
-	SZE
-	BUN Plus
-Minus,
-	BSA N_ADD_D
-	BUN Loop
-Plus,
-	LDA Q
-	INC
-	STA Q
-	BUN Loop
-End,
-	LDA SH
-	STA R
-	LDA R_T1
-	SZA
-	BUN Ret_Remindrr
-	LDA Q
-	BUN Return
-Ret_Remindrr,
-	LDA R
-Return,
-	BSA F_PUSH
-	BUN F_DIVMOD I
-CIL_N,
-	HEX 0
-	CLE
-	LDA S
-	CIL
-	STA S
-	LDA SH
-	CIL
-	STA SH
-	BUN CIL_N I
-N_ADD_D,
-	HEX 0
-	LDA D
-	ADD SH
-	STA SH
-	BUN N_ADD_D I
-N_SUB_D,
-	HEX 0
-	LDA D
-	CMA
-	INC
-	ADD SH
-	STA SH
-	BUN N_SUB_D I
-
-S,	DEC 0
-D,	DEC 0
-SH, DEC 0
-B,	HEX FFEF
-BX,	HEX FFEF
-Q,	DEC 0
-R,	DEC 0
-
 R_T0,  HEX 0
 R_T1,  HEX 0
 R_T2,  HEX 0
 R_T3,  HEX 0
 R_T4,  HEX 0
 R_T5,  HEX 0
-R_T6,  HEX 0
-R_T7,  HEX 0
-R_T8,  HEX 0
-R_T9,  HEX 0
 
 R_ESP, SYM STACK
 
@@ -3307,7 +3215,7 @@ const optimizeCode = code => {
 			}
 			
 			if(/^BSA F_POP$/.test(t[k])){
-				const reg = [0,1,2,3,4,5,6,7,8,9].filter(r => !used_reg.some(u => u == r)).shift();
+				const reg = [0,1,2,3,4,5].filter(r => !used_reg.some(u => u == r)).shift();
 				if(reg !== undefined){
 					t[i] = "STA R_T"+reg;
 					t[k] = "LDA R_T"+reg;
