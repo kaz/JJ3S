@@ -176,6 +176,16 @@ function enemy_wait(index)
         enemy_rot[index] = 3 - rot
     end
 end
+function ishit(pacman_x, pacman_y)
+    for i = 0, 3 do
+        tmp=enemy_x[i]+enemy_y[i]-pacman_x-pacman_y
+        if tmp<5 and tmp>-5 then
+           goto gameover
+        end
+    end
+end
+function Edebuff()
+end
 
 -- Main routine
 
@@ -269,6 +279,14 @@ while 1 do
         enemy_out = 1
     end
     
+    for i = 0, 3 do
+        tmpx=enemy_x[i]-pacman_x
+        tmpy=enemy_y[i]-pacman_y
+        if tmpx<17 and tmpx>-17 and tmpy<17 and tmpy>-17 then
+           goto gameover
+        end
+    end
+    
     ex3.sleep()
     timer = timer + 1
 
@@ -292,6 +310,34 @@ end
 -- CLEAR
 for i = 0, 4 do
     ex3.draw_static_sprite(32+3+i, 0, i+(12+x_gap), 18+y_gap)
+end
+
+-- clear animation
+count = 0
+for t = 0, 56 do
+    if t == (t >> 3) * 8 then
+        count = count + 32
+        if count == 64 then count = 0 end
+    end
+    for y = 0, 27 do
+        for x = 0, 30 do
+            m = map[x+y*31]
+            if m & 8 == 8 then
+                ex3.draw_static_sprite(m+count, 0, x+x_gap, y+y_gap)
+            end
+        end
+    end
+    ex3.sleep()
+end
+
+-- clear wait
+for t = 0, 40 do
+    ex3.sleep()
+end
+
+-- CLEAR
+for i = 0, 4 do
+    ex3.draw_static_sprite(32+3+i, 0, 12+i+x_gap, 18+y_gap)
 end
 
 -- clear animation
