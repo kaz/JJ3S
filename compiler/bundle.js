@@ -3178,6 +3178,22 @@ const opt_del_lda_sta = (t, i) => {
 	}
 };
 
+// ACを実質変更しない命令を削除
+const opt_del_not_affect_ac = (t, i) => {
+	const target = /^(CLA|LDA)/;
+	const not_affect_ac = /^(S[TPNX]A|SZE|C[LM]E|SEG|SL[XY]|WRT|TR[XY]|SLP)/;
+	if(target.test(t[i])){
+		for(let k = i+1; k < t.length; k++){
+			if(target.test(t[k]) && t[i] == t[k]){
+				t[k] = null;
+			}
+			if(t[k] && !not_affect_ac.test(t[k])){
+				break;
+			}
+		}
+	}
+};
+
 // 自己代入を最適化
 const opt_self_assign = (t, i) => {
 	const repl_conf = [{
@@ -3214,10 +3230,10 @@ const opt_self_assign = (t, i) => {
 
 // よりクロック数の少ない命令に置き換え
 const opt_replace_inst = (t, i) => {
-	if(t[i] == "LDA C_VAL_P_0"){
+	if(t[i] == "LDA C_P0"){
 		t[i] = "CLA";
 	}
-	else if(t[i] == "ADD C_VAL_P_1"){
+	else if(t[i] == "ADD C_P1"){
 		t[i] = "INC";
 	}
 };
@@ -3257,6 +3273,7 @@ const optimizeCode = code => {
 		opt_del_bun(code, i);
 		opt_del_push_pop(code, i);
 		opt_del_lda_sta(code, i);
+		opt_del_not_affect_ac(code, i);
 		opt_self_assign(code, i);
 		opt_replace_inst(code, i);
 		opt_pseudo_stack(code, i);
