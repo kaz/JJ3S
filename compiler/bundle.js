@@ -2292,7 +2292,10 @@ const compile = abs_syn_tree => {
 	const __find_var = (name, local) => env_stack.slice(local ? 1 : 0).map(e => e+"_"+name).filter(e => e in env_vars).pop();
 	const find_var = name => {
 		const label = __find_var(name, false);
-		return label || assign_var(name, false);
+		if(!label){
+			throw new Error("Undeclared variable: "+name);
+		}
+		return label;
 	};
 	const assign_var = (name, local) => {
 		const label = (local ? current_env() : env_stack[0])+"_"+name;
