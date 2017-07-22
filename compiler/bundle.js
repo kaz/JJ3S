@@ -2492,6 +2492,33 @@ const compile = abs_syn_tree => {
 			t.push("LDA "+find_var(ast.name));
 			t.push("BSA F_PUSH");
 		}
+		else if(ast.type == "LogicalExpression"){
+			code_gen(ast.left, t);
+			
+			const [lc,le] = gen_label(2);
+			if(ast.operator == "and"){
+				t.push("BSA F_POP");
+				t.push("SZA");
+				t.push("BUN "+lc);
+				t.push("BUN "+le);
+				t.push(lc+",");
+				code_gen(ast.right, t);
+				t.push("BSA F_POP");
+				t.push(le+",");
+				t.push("BSA F_PUSH");
+			}
+			else if(ast.operator == "or"){
+				t.push("BSA F_POP");
+				t.push("SZA");
+				t.push("BUN "+le);
+				t.push("BUN "+lc);
+				t.push(lc+",");
+				code_gen(ast.right, t);
+				t.push("BSA F_POP");
+				t.push(le+",");
+				t.push("BSA F_PUSH");
+			}
+		}
 		else if(ast.type == "BinaryExpression" || ast.type == "LogicalExpression"){
 			code_gen(ast.left, t);
 			code_gen(ast.right, t);
@@ -2715,23 +2742,6 @@ const compile = abs_syn_tree => {
 				t.push("CLA");
 				t.push("INC");
 				t.push(l4+",");
-			}
-			else if(ast.operator == "and"){
-				t.push("BSA F_POP");
-				t.push("STA R_T1");
-				t.push("BSA F_POP");
-				t.push("SZA");
-				t.push("LDA R_T1");
-			}
-			else if(ast.operator == "or"){
-				const [l] = gen_label(1);
-				t.push("BSA F_POP");
-				t.push("STA R_T1");
-				t.push("BSA F_POP");
-				t.push("SZA");
-				t.push("BUN "+l);
-				t.push("LDA R_T1");
-				t.push(l+",")
 			}
 			else {
 				throw new Error("Unknown binop: "+ast.operator);

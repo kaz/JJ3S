@@ -41,7 +41,7 @@ end
 pacman_x = 16 * (x_gap + 23) - 8
 pacman_y = 16 * (y_gap + 13)
 pacman_rot = 1
-pacman_anim = 2
+pacman_anim = 0
 pacman_spd = 4
 
 small_score = 0
@@ -70,7 +70,6 @@ function pacman_move()
     x = ((pacman_x + 16) >> 4) - x_gap
     y = ((pacman_y + 16) >> 4) - y_gap
     m = map[x+y*31]
-    print(m)
     if m == 1 or m == 2 then
         map[x+y*31] = m+32
         ex3.draw_static_sprite(m+32, 0, x+x_gap, y+y_gap)
@@ -83,39 +82,29 @@ end
 while 1 do
     if turnable(pacman_x, pacman_y) then
         key_r, key_u, key_d, key_l = ex3.get_key_state()
-        if key_r or key_u or key_d or key_l then
-            if key_r and walkable(pacman_x+16+1, pacman_y) then
-                pacman_rot = 2
-            elseif key_u and walkable(pacman_x, pacman_y-1) then
-                pacman_rot = 3
-            elseif key_d and walkable(pacman_x, pacman_y+16+1) then
-                pacman_rot = 1
-            elseif key_l and walkable(pacman_x-1, pacman_y) then
-                pacman_rot = 0
-            end
+        if key_r and walkable(pacman_x+16+1, pacman_y) then
+            pacman_rot = 2
+        elseif key_u and walkable(pacman_x, pacman_y-1) then
+            pacman_rot = 3
+        elseif key_d and walkable(pacman_x, pacman_y+16+1) then
+            pacman_rot = 1
+        elseif key_l and walkable(pacman_x-1, pacman_y) then
+            pacman_rot = 0
         end
     end
     
-    if pacman_rot == 2 then
-        if walkable(pacman_x+16+1, pacman_y) then
-           pacman_x = pacman_x + pacman_spd
-           pacman_move()
-        end
-    elseif pacman_rot == 3 then
-        if walkable(pacman_x, pacman_y-1) then
-            pacman_y = pacman_y - pacman_spd
-            pacman_move()
-        end
-    elseif pacman_rot == 1 then
-        if walkable(pacman_x, pacman_y+16+1) then
-            pacman_y = pacman_y + pacman_spd
-            pacman_move()
-        end
-    elseif pacman_rot == 0 then
-        if walkable(pacman_x-1, pacman_y) then
-           pacman_x = pacman_x - pacman_spd
-           pacman_move()
-        end
+    if pacman_rot == 2 and walkable(pacman_x+16+1, pacman_y) then
+        pacman_x = pacman_x + pacman_spd
+        pacman_move()
+    elseif pacman_rot == 3 and walkable(pacman_x, pacman_y-1) then
+        pacman_y = pacman_y - pacman_spd
+        pacman_move()
+    elseif pacman_rot == 1 and walkable(pacman_x, pacman_y+16+1) then
+        pacman_y = pacman_y + pacman_spd
+        pacman_move()
+    elseif pacman_rot == 0 and walkable(pacman_x-1, pacman_y) then
+        pacman_x = pacman_x - pacman_spd
+        pacman_move()
     end
     
     anim_index = pacman_anim
