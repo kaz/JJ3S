@@ -26,9 +26,10 @@ const compile = abs_syn_tree => {
 	
 	const gen_label = (num, prefix = "L_SYS_") => "A".repeat(num).split("").map(e => prefix+(gCnt++));
 	
-	let currentLoop = null;
-	const start_loop = label => currentLoop = label;
-	const interrupt_loop = _ => currentLoop;
+	const loop_stack = [];
+	const enter_loop = label => loop_stack.push(label);
+	const break_loop = _ => loop_stack[loop_stack.length-1];
+	const exit_loop = _ => loop_stack.pop();
 
 	const cvals = {};
 	const const_value = v => {
@@ -71,8 +72,8 @@ const compile = abs_syn_tree => {
 		}
 		else if(ast.type == "WhileStatement"){
 			const [ls,lc,le] = gen_label(3);
-			start_loop(le);
 			
+			enter_loop(le);
 			enter_env();
 			t.push(ls+",");
 			code_gen(ast.condition, t);
@@ -85,11 +86,12 @@ const compile = abs_syn_tree => {
 			t.push("BUN "+ls);
 			t.push(le+",");
 			exit_env();
+			exit_loop();
 		}
 		else if(ast.type == "RepeatStatement"){
 			const [lc,le] = gen_label(2);
-			start_loop(le);
 			
+			enter_loop(le);
 			enter_env();
 			t.push(lc+",");
 			ast.body.forEach(e => code_gen(e, t));
@@ -100,11 +102,12 @@ const compile = abs_syn_tree => {
 			t.push("BUN "+lc);
 			t.push(le+",");
 			exit_env();
+			exit_loop();
 		}
 		else if(ast.type == "ForNumericStatement"){
 			const [ls,le] = gen_label(2);
-			start_loop(le);
 			
+			enter_loop(le);
 			enter_env();
 			code_gen(ast.start, t);
 			t.push("BSA F_POP");
@@ -137,9 +140,10 @@ const compile = abs_syn_tree => {
 			
 			t.push(le+",");
 			exit_env();
+			exit_loop();
 		}
 		else if(ast.type == "BreakStatement"){
-			t.push("BUN "+interrupt_loop());
+			t.push("BUN "+break_loop());
 		}
 		else if(ast.type == "IfStatement"){
 			const [le] = gen_label(1);
