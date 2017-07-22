@@ -47,8 +47,8 @@ pacman_spd = 2
 function walkable(x, y)
     x = ((x + 8) >> 4) - x_gap
     y = ((y + 8) >> 4) - y_gap
-    m = map[x+y*31] & 7
-    return m == 0 or m == 4 or m == 5
+    m = map[x+y*31] & (64+8)
+    return m == 0
 end
 
 function turnable(x, y)
