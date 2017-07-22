@@ -41,30 +41,25 @@ pacman_spd = 4
 pacman_died = 0
 
 enemy_spd = 4
-enemy1_x = 16 * (x_gap + 11) - 8
-enemy1_y = 16 * (y_gap + 13)
-enemy1_rot = 3
-enemy2_x = 16 * (x_gap + 10) - 8
-enemy2_y = 16 * (y_gap + 13)
-enemy3_x = 16 * (x_gap + 10) - 8
-enemy3_y = 16 * (y_gap + 13)
-enemy4_x = 16 * (x_gap + 10) - 8
-enemy4_y = 16 * (y_gap + 13)
+enemy_spd_half = enemy_spd >> 1
 enemy_x = {248, 296, 296, 296}
-enemy_y = {224, 200, 224, 248}
-enemy_rot = {2, 1, 0, 2}
-enemy_index = 0
+enemy_y = {224, 224, 200-8, 248+8}
+enemy_rot = {2, 3, 0, 0}
+enemy_count = 1
+enemy_out = 0
 
 small_score = 0
 small_amount = 240
 
 cleared = 0
 
+enemy_walk_mode = 0
+
 function walkable(x, y)
     x = ((x + 8) >> 4) - x_gap
     y = ((y + 8) >> 4) - y_gap
     m = map[x+y*31] & (64+8)
-    return m == 0
+    return m == 0 and (enemy_walk_mode == 0 or x ~= 14 or (y ~= 5 and y ~= 22))
 end
 
 function turnable(x, y)
@@ -117,19 +112,68 @@ function flash_item(x, y)
 end
 
 function enemy_move(index)
+    enemy_walk_mode = 1
     x = enemy_x[index]
     y = enemy_y[index]
+    oldrot = enemy_rot[index]
+    if turnable(x, y) then
+        newrot = ex3.get_random() & 3
+        if newrot + oldrot == 3 then
+        elseif newrot == 0 and walkable(x-1, y) then
+            enemy_rot[index] = newrot
+        elseif newrot == 1 and walkable(x, y+(16+1)) then
+            enemy_rot[index] = newrot
+        elseif newrot == 2 and walkable(x, y-1) then
+            enemy_rot[index] = newrot
+        elseif newrot == 3 and walkable(x+(16+1), y) then
+            enemy_rot[index] = newrot
+        end
+    end
     rot = enemy_rot[index]
     if rot == 0 and walkable(x-1, y) then
         enemy_x[index] = x - enemy_spd
-    elseif rot == 1 and walkable(x, y+16+1) then
+    elseif rot == 1 and walkable(x, y+(16+1)) then
         enemy_y[index] = y + enemy_spd
     elseif rot == 2 and walkable(x, y-1) then
         enemy_y[index] = y - enemy_spd
-    elseif rot == 3 and walkable(x+16+1, y) then
+    elseif rot == 3 and walkable(x+(16+1), y) then
         enemy_x[index] = x + enemy_spd
     else
-        enemy_rot[index] = ex3.get_random() % 4
+        enemy_rot[index] = ex3.get_random() & 3
+    end
+    enemy_walk_mode = 0
+end
+
+function enemy_out_anim(index)
+    x = enemy_x[index]
+    y = enemy_y[index]
+    if y == 224 then -- at gate
+        if x == 248 then
+            enemy_count = enemy_count + 1
+            enemy_out = 0
+        else
+            enemy_x[index] = x - enemy_spd_half
+            enemy_rot[index] = 0
+        end
+    elseif y < 224 then
+        enemy_y[index] = y + enemy_spd_half
+        enemy_rot[index] = 1
+    else
+        enemy_y[index] = y - enemy_spd_half
+        enemy_rot[index] = 2
+    end
+end
+
+function enemy_wait(index)
+    x = enemy_x[index]
+    y = enemy_y[index]
+    rot = enemy_rot[index]
+    if rot == 0 and walkable(x-9, y) then
+        enemy_x[index] = x - enemy_spd_half
+    elseif rot == 3 and walkable(x+(16+9), y) then
+        enemy_x[index] = x + enemy_spd_half
+    else
+        enemy_rot[index] = 3 - rot
     end
 end
 
@@ -149,10 +193,14 @@ pacman_rot = 1
 pacman_anim = 0
 
 ex3.draw_dynamic_sprite(8*2, pacman_rot, pacman_x, pacman_y, 0)
+for i = 0, 3 do
+    ex3.draw_dynamic_sprite(8*7+i*2, 0, enemy_x[i], enemy_y[i], i*2+1)
+    ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+2)
+end
 
 -- READY
 for i = 0, 4 do
-    ex3.draw_static_sprite(3+i, 0, 12+i+x_gap, 18+y_gap)
+    ex3.draw_static_sprite(3+i, 0, i+(12+x_gap), 18+y_gap)
 end
 
 for t = 0, 60 do
@@ -161,19 +209,19 @@ end
 
 -- remove READY
 for i = 0, 4 do
-    ex3.draw_static_sprite(0, 0, 12+i+x_gap, 18+y_gap)
+    ex3.draw_static_sprite(0, 0, i+(12+x_gap), 18+y_gap)
 end
 
--- timer = 0
+timer = 0
 while 1 do
     -- receive input
     if turnable(pacman_x, pacman_y) then
         key_r, key_u, key_d, key_l = ex3.get_key_state()
-        if key_r and walkable(pacman_x+16+1, pacman_y) then
+        if key_r and walkable(pacman_x+(16+1), pacman_y) then
             pacman_rot = 2
         elseif key_u and walkable(pacman_x, pacman_y-1) then
             pacman_rot = 3
-        elseif key_d and walkable(pacman_x, pacman_y+16+1) then
+        elseif key_d and walkable(pacman_x, pacman_y+(16+1)) then
             pacman_rot = 1
         elseif key_l and walkable(pacman_x-1, pacman_y) then
             pacman_rot = 0
@@ -181,13 +229,13 @@ while 1 do
     end
 
     -- move pacman
-    if pacman_rot == 2 and walkable(pacman_x+16+1, pacman_y) then
+    if pacman_rot == 2 and walkable(pacman_x+(16+1), pacman_y) then
         pacman_x = pacman_x + pacman_spd
         pacman_move()
     elseif pacman_rot == 3 and walkable(pacman_x, pacman_y-1) then
         pacman_y = pacman_y - pacman_spd
         pacman_move()
-    elseif pacman_rot == 1 and walkable(pacman_x, pacman_y+16+1) then
+    elseif pacman_rot == 1 and walkable(pacman_x, pacman_y+(16+1)) then
         pacman_y = pacman_y + pacman_spd
         pacman_move()
     elseif pacman_rot == 0 and walkable(pacman_x-1, pacman_y) then
@@ -207,20 +255,32 @@ while 1 do
     ex3.draw_dynamic_sprite(8*2+anim_index, pacman_rot, pacman_x, pacman_y, 0)
 
     for i = 0, 3 do
-       enemy_move(i)
-       ex3.draw_dynamic_sprite(8*7+i*2, 0, enemy_x[i], enemy_y[i], i*2+1)
-       ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+2)
+        if i < enemy_count then
+            enemy_move(i)
+        elseif i == enemy_count and enemy_out then
+            enemy_out_anim(i)
+        else
+            enemy_wait(i)
+        end
+        ex3.draw_dynamic_sprite(8*7+i*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2+1)
+        ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+2)
+    end
+    if timer & 127 == 127 then
+        enemy_out = 1
     end
     
     ex3.sleep()
-
-    -- timer = timer + 1
-    -- if timer == 100 then
-    --     goto gameover
-    -- end
+    timer = timer + 1
 
     -- end
     if cleared then break end
+end
+
+for i = 0, 3 do
+    ex3.draw_dynamic_sprite(20+i, 0, -50+i*32+pacman_x, -40+pacman_y, i+1)
+end
+for i = 0, 4 do
+    ex3.draw_dynamic_sprite(0, 0, 0, 0, i+5)
 end
 
 -- clear wait
@@ -230,7 +290,7 @@ end
 
 -- CLEAR
 for i = 0, 4 do
-    ex3.draw_static_sprite(32+3+i, 0, 12+i+x_gap, 18+y_gap)
+    ex3.draw_static_sprite(32+3+i, 0, i+(12+x_gap), 18+y_gap)
 end
 
 -- clear animation
