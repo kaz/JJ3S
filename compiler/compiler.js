@@ -182,9 +182,22 @@ const compile = abs_syn_tree => {
 		}
 		else if(ast.type == "AssignmentStatement" || ast.type == "LocalStatement"){
 			ast.init.forEach(e => code_gen(e, t));
-			[].concat(ast.variables).reverse().forEach(v => {
-				t.push("BSA F_POP");
-				t.push("STA "+assign_var(v.name, ast.type == "LocalStatement"));
+			[].concat(ast.variables).reverse().forEach(va => {
+				if(va.type == "Identifier"){
+					t.push("BSA F_POP");
+					t.push("STA "+assign_var(va.name, ast.type == "LocalStatement"));
+				}
+				else if(va.type == "IndexExpression"){
+					code_gen(va.index, t);
+					t.push("BSA F_POP");
+					t.push("ADD "+find_var(va.base.name));
+					t.push("STA R_T1");
+					t.push("BSA F_POP");
+					t.push("STA R_T1 I");
+				}
+				else {
+					throw new Error("Unknown variable type: "+ast.type);
+				}
 			});
 		}
 		else if(ast.type == "TableConstructorExpression"){

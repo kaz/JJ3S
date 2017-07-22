@@ -81,20 +81,18 @@ const parser = __webpack_require__(2);
 const compiler = __webpack_require__(5);
 const optimizer = __webpack_require__(7);
 
-module.exports = lua_user_code => {
-	console.error = _ => 1;
-	
+module.exports = (lua_user_code, debug = _ => 0) => {
 	const rawTree = parser.parse(lua_user_code, {luaVersion: "5.3"});
-	console.error("<<<raw>>>");
-	console.error(JSON.stringify(rawTree, null, 2));
+	debug("<<<raw>>>");
+	debug(JSON.stringify(rawTree, null, 2));
 	
 	const tree = optimizer.optimizeTree(rawTree);
-	console.error("<<<optiized>>>");
-	console.error(JSON.stringify(tree, null, 2));
+	debug("<<<optiized>>>");
+	debug(JSON.stringify(tree, null, 2));
 
 	const rawCode = compiler.compile(tree);
 	const code = optimizer.optimizeCode(rawCode);
-	console.error(`optimized! ${rawCode.length} -> ${code.length}`);
+	debug(`optimized! ${rawCode.length} -> ${code.length}`);
 
 	return code.map(e => /,/.test(e) ? e : `\t${e}`).join("\n");
 };
@@ -2459,9 +2457,22 @@ const compile = abs_syn_tree => {
 		}
 		else if(ast.type == "AssignmentStatement" || ast.type == "LocalStatement"){
 			ast.init.forEach(e => code_gen(e, t));
-			[].concat(ast.variables).reverse().forEach(v => {
-				t.push("BSA F_POP");
-				t.push("STA "+assign_var(v.name, ast.type == "LocalStatement"));
+			[].concat(ast.variables).reverse().forEach(va => {
+				if(va.type == "Identifier"){
+					t.push("BSA F_POP");
+					t.push("STA "+assign_var(va.name, ast.type == "LocalStatement"));
+				}
+				else if(va.type == "IndexExpression"){
+					code_gen(va.index, t);
+					t.push("BSA F_POP");
+					t.push("ADD "+find_var(va.base.name));
+					t.push("STA R_T1");
+					t.push("BSA F_POP");
+					t.push("STA R_T1 I");
+				}
+				else {
+					throw new Error("Unknown variable type: "+ast.type);
+				}
 			});
 		}
 		else if(ast.type == "TableConstructorExpression"){
