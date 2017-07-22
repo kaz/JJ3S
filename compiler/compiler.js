@@ -203,7 +203,7 @@ const compile = abs_syn_tree => {
 					t.push("STA R_T1 I");
 				}
 				else {
-					throw new Error("Unknown variable type: "+ast.type);
+					throw new Error("Unknown variable type: "+va.type);
 				}
 			});
 		}
