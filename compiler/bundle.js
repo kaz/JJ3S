@@ -91,7 +91,7 @@ module.exports = (lua_user_code, debug = _ => 0) => {
 	debug(JSON.stringify(tree, null, 2));
 
 	const rawCode = compiler.compile(tree);
-	const code = optimizer.optimize_labels(optimizer.optimize_instructions(rawCode));
+	const code = optimizer.optimize_sequences(optimizer.optimize_instructions(rawCode));
 	debug(`omitted ${rawCode.length - code.length} lines`);
 
 	return code.map(e => /,/.test(e) ? e : `\t${e}`).join("\n");
@@ -3300,7 +3300,7 @@ const opt_del_lda_sta = (t, i) => {
 // ACを実質変更しない命令を削除
 const opt_del_not_affect_ac = (t, i) => {
 	const target = /^(CLA|LDA)/;
-	const not_affect_ac = /^(S[TPNX]A|SZE|C[LM]E|SEG|SL[XY]|WRT|TR[XY]|SLP)/;
+	const not_affect_ac = /^(S[TPNZ]A|SZE|C[LM]E|SEG|SL[XY]|WRT|TR[XY]|SLP)/;
 	if(target.test(t[i])){
 		for(let k = i+1; k < t.length; k++){
 			if(target.test(t[k]) && t[i] == t[k]){
@@ -3435,9 +3435,82 @@ const reassign_labels = (code, prefix = "L_") => {
 	});
 };
 
-const optimize_labels = code => reassign_labels(merge_labels(code));
+const optimize_sequences = code => {
+	let insts = merge_labels(code);
+	let gadd = [];
+	
+	for(let sz = 20; sz > 2; sz--){
+		const seqs = [];
+		for(let d = 0; d < sz; d++){
+			for(let i = d; i < insts.length; i += sz){
+				const sub = insts.slice(i, i+sz);
+				if(/^(S[PNZ]A|SZE)/.test(sub[sz-1]) || sub.some(inst => Array.isArray(inst) || /^(HEX|DEC|SYM)/.test(inst))){
+					continue;
+				}
+				seqs.push({i, block: JSON.stringify(sub)});
+			}
+		}
+		
+		const hist = [];
+		const dups = {};
+		
+		seqs.forEach(seq => {
+			const dup = hist.find(h => h.block == seq.block);
+			if(dup){
+				if(!(seq.block in dups)){
+					dups[seq.block] = [dup];
+				}
+				dups[seq.block].push(seq);
+			}else{
+				hist.push(seq);
+			}
+		});
+		
+		const rmj = [];
+		let adj = [];
+		
+		Object.keys(dups)
+		.map(k => dups[k].sort((a, b) => a.i - b.i))
+		.sort((a, b) => b.length - a.length)
+		.forEach((dup, j) => {
+			const label = "SUBROUTINE_"+sz+"_"+j;
+			const check_fn = x => !rmj.some(r => (r.i <= x.i && x.i < r.i+sz) || (x.i <= r.i && r.i < x.i+sz));
+			
+			dup = dup.filter(check_fn);
+			if(!dup.length){
+				return;
+			}
+			
+			rmj.push({label, i: dup[0].i});
+			dup = dup.filter(check_fn);
+			if(dup.length < 1){
+				rmj.pop();
+				return;
+			}
+			
+			adj.push([label]);
+			adj.push("HEX 0");
+			adj = adj.concat(JSON.parse(dup[0].block));
+			adj.push("BUN "+label+" I");
+			
+			while(dup.length){
+				rmj.push({label, i: dup[0].i});
+				dup = dup.filter(check_fn);
+			}
+		});
+		
+		rmj.sort((a, b) => a.i - b.i).forEach((rm, j) => {
+			insts.splice(rm.i-(sz-1)*j, sz, "BSA "+rm.label);
+		});
+		
+		adj.push(insts.pop());
+		insts = insts.concat(adj);
+	}
+	
+	return reassign_labels(insts);
+};
 
-module.exports = {optimize_syntax_tree, optimize_instructions, optimize_labels};
+module.exports = {optimize_syntax_tree, optimize_instructions, optimize_sequences};
 
 
 /***/ })

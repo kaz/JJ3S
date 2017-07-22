@@ -14,7 +14,7 @@ module.exports = (lua_user_code, debug = _ => 0) => {
 	debug(JSON.stringify(tree, null, 2));
 
 	const rawCode = compiler.compile(tree);
-	const code = optimizer.optimize_labels(optimizer.optimize_instructions(rawCode));
+	const code = optimizer.optimize_sequences(optimizer.optimize_instructions(rawCode));
 	debug(`omitted ${rawCode.length - code.length} lines`);
 
 	return code.map(e => /,/.test(e) ? e : `\t${e}`).join("\n");
