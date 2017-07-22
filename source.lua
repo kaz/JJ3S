@@ -40,7 +40,7 @@ pacman_anim = 0
 pacman_spd = 4
 
 small_score = 0
-small_amount = 240
+small_amount = 10 -- 240
 
 cleared = 0
 
@@ -114,10 +114,7 @@ for i = 0, 4 do
     ex3.draw_static_sprite(3+i, 0, 12+i+x_gap, 18+y_gap)
 end
 
-timer = 0
-while 1 do
-    timer = timer + 1
-    if timer > 60 then break end
+for t = 0, 60 do
     ex3.sleep()
 end
 
@@ -176,10 +173,7 @@ while 1 do
 end
 
 -- clear wait
-count = 0
-while 1 do
-    count = count + 1
-    if count > 40 then break end
+for t = 0, 40 do
     ex3.sleep()
 end
 
@@ -189,11 +183,9 @@ for i = 0, 4 do
 end
 
 -- clear animation
-timer = 0
 count = 0
-while 1 do
-    timer = timer + 1
-    if timer == (timer >> 3) * 8 then
+for t = 0, 56 do
+    if t == (t >> 3) * 8 then
         count = count + 32
         if count == 64 then count = 0 end
     end
@@ -204,9 +196,6 @@ while 1 do
                 ex3.draw_static_sprite(m+count, 0, x+x_gap, y+y_gap)
             end
         end
-    end
-    if timer == 48 then
-        break
     end
     ex3.sleep()
 end
