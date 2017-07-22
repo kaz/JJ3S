@@ -192,10 +192,10 @@ pacman_y = 16 * (y_gap + 13)
 pacman_rot = 1
 pacman_anim = 0
 
-ex3.draw_dynamic_sprite(8*2, pacman_rot, pacman_x, pacman_y, 0)
+ex3.draw_dynamic_sprite(8*2, pacman_rot, pacman_x, pacman_y, 8)
 for i = 0, 3 do
-    ex3.draw_dynamic_sprite(8*7+i*2, 0, enemy_x[i], enemy_y[i], i*2+1)
-    ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+2)
+    ex3.draw_dynamic_sprite(8*7+i*2, 0, enemy_x[i], enemy_y[i], i*2)
+    ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
 end
 
 -- READY
@@ -252,7 +252,7 @@ while 1 do
     -- draw pacman
     anim_index = pacman_anim
     if anim_index == 3 then anim_index = 1 end
-    ex3.draw_dynamic_sprite(8*2+anim_index, pacman_rot, pacman_x, pacman_y, 0)
+    ex3.draw_dynamic_sprite(8*2+anim_index, pacman_rot, pacman_x, pacman_y, 8)
 
     for i = 0, 3 do
         if i < enemy_count then
@@ -262,8 +262,8 @@ while 1 do
         else
             enemy_wait(i)
         end
-        ex3.draw_dynamic_sprite(8*7+i*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2+1)
-        ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+2)
+        ex3.draw_dynamic_sprite(8*7+i*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
+        ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
     end
     if timer & 127 == 127 then
         enemy_out = 1
@@ -276,11 +276,12 @@ while 1 do
     if cleared then break end
 end
 
+-- 5000 chou
 for i = 0, 3 do
-    ex3.draw_dynamic_sprite(20+i, 0, -50+i*32+pacman_x, -40+pacman_y, i+1)
+    ex3.draw_dynamic_sprite(20+i, 0, -50+i*32+pacman_x, -40+pacman_y, i)
 end
 for i = 0, 4 do
-    ex3.draw_dynamic_sprite(0, 0, 0, 0, i+5)
+    ex3.draw_dynamic_sprite(0, 0, 0, 0, i+4)
 end
 
 -- clear wait
@@ -323,14 +324,14 @@ end
         ex3.sleep()
     end
     for i = 0, 11 do
-        ex3.draw_dynamic_sprite(16+(i>>2), 3, pacman_x, pacman_y, 0)
+        ex3.draw_dynamic_sprite(16+(i>>2), 3, pacman_x, pacman_y, 8)
         ex3.sleep()
     end
     for i = 0, 31 do
-        ex3.draw_dynamic_sprite(24+(i>>2), 0, pacman_x, pacman_y, 0)
+        ex3.draw_dynamic_sprite(24+(i>>2), 0, pacman_x, pacman_y, 8)
         ex3.sleep()
     end
-    ex3.draw_dynamic_sprite(0, 0, pacman_x, pacman_y, 0)
+    ex3.draw_dynamic_sprite(0, 0, pacman_x, pacman_y, 8)
     ex3.sleep()
 
     goto restart
