@@ -73,13 +73,13 @@ function turnable(x, y)
 end
 
 function pacman_move()
-    -- アニメーション
+    -- ???????
     pacman_anim = pacman_anim + 1
     if pacman_anim > 3 then
         pacman_anim = 0
     end
 
-    -- ○をとる
+    -- ????
     x = ((pacman_x + 16) >> 4) - x_gap
     y = ((pacman_y + 16) >> 4) - y_gap
     m = map[x+y*31]
@@ -99,7 +99,7 @@ function pacman_move()
         end
     end
 
-    -- 上下ワープ
+    -- ?????
     if pacman_x == 216 + x_gap * 16 then -- center
         if pacman_y == 424 + y_gap * 16 and pacman_rot == 1 then
            pacman_y = -8 + y_gap * 16
@@ -137,6 +137,9 @@ function enemy_move(index)
             enemy_rot[index] = newrot
         end
     end
+    if enemy_state[index] then
+        enemy_spd = 2
+    end
     rot = enemy_rot[index]
     if rot == 0 and walkable(x-1, y) then
         enemy_x[index] = x - enemy_spd
@@ -149,6 +152,7 @@ function enemy_move(index)
     else
         enemy_rot[index] = ex3.get_random() & 3
     end
+    enemy_spd = 4
     enemy_walk_mode = 0
 end
 
@@ -320,9 +324,12 @@ while 1 do
         else
             enemy_wait(i)
         end
-        if enemy_state[i]==0 or (enemy_state[i]==1 and weak_timer >= 200 and weak_timer & 8) or (enemy_state[i]==2 and timer & 4) then -- normal
+        if enemy_state[i]==0 or (enemy_state[i]==2 and timer & 4) then -- normal
             ex3.draw_dynamic_sprite(8*7+i*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
             ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
+        elseif (enemy_state[i]==1 and weak_timer >= 200 and weak_timer & 8) then
+            ex3.draw_dynamic_sprite(52+((timer>>2)&1)*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
+            ex3.draw_dynamic_sprite(0, 0, enemy_x[i], enemy_y[i], i*2+1)
         elseif enemy_state[i]==1 then -- weak
             ex3.draw_dynamic_sprite(52+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
             ex3.draw_dynamic_sprite(0, 0, enemy_x[i], enemy_y[i], i*2+1)
