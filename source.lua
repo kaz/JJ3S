@@ -45,8 +45,10 @@ enemy_spd_half = enemy_spd >> 1
 enemy_x = {248, 296, 296, 296}
 enemy_y = {224, 224, 200-8, 248+8}
 enemy_rot = {2, 3, 0, 0}
+enemy_state = {0, 0, 0, 0} -- weak:1, dead:2
 enemy_count = 1
 enemy_out = 0
+weak_timer = 0
 
 small_score = 0
 small_amount = 240
@@ -87,6 +89,11 @@ function pacman_move()
             small_score = small_score + 1
             if small_score == small_amount then
                 cleared = 1
+            end
+        elseif m == 2 then
+            for i = 0, 3 do
+                enemy_state[i] = 1
+                weak_timer = 1
             end
         end
     end
@@ -202,8 +209,13 @@ function restart_enemy()
     enemy_rot[1] = 3
     enemy_rot[2] = 0
     enemy_rot[3] = 0
+    enemy_state[0] = 0
+    enemy_state[1] = 0
+    enemy_state[2] = 0
+    enemy_state[3] = 0
     enemy_count = 1
     enemy_out = 0
+    weak_timer = 0
 end
 
 -- Main routine
@@ -285,6 +297,7 @@ while 1 do
     if anim_index == 3 then anim_index = 1 end
     ex3.draw_dynamic_sprite(8*2+anim_index, pacman_rot, pacman_x, pacman_y, 8)
 
+    -- process enemy
     for i = 0, 3 do
         if i < enemy_count then
             enemy_move(i)
@@ -293,23 +306,48 @@ while 1 do
         else
             enemy_wait(i)
         end
-        ex3.draw_dynamic_sprite(8*7+i*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
-        ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
+        if enemy_state[i]==0 or (enemy_state[i]==1 and weak_timer >= 200 and weak_timer & 8) then -- normal
+            ex3.draw_dynamic_sprite(8*7+i*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
+            ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
+        else -- weak
+            ex3.draw_dynamic_sprite(52+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
+            ex3.draw_dynamic_sprite(0, 0, enemy_x[i], enemy_y[i], i*2+1)
+        end
     end
     if timer & 127 == 127 then
         enemy_out = 1
     end
-    
+
+    -- gameover or defeat
     for i = 0, 3 do
         tmpx=enemy_x[i]-pacman_x
         tmpy=enemy_y[i]-pacman_y
         if tmpx<17 and tmpx>-17 and tmpy<17 and tmpy>-17 then
-           goto gameover
+            if enemy_state[i]==0 then -- normal
+                goto gameover
+            else -- weak
+                enemy_state[i] = 2
+                -- TODO : kill anim
+            end
         end
     end
-    
+
+    -- defeat enemy
+
+
     ex3.sleep()
     timer = timer + 1
+    if weak_timer then
+        weak_timer = weak_timer + 1
+        if weak_timer >= 300 then
+            weak_timer = 0
+            for i = 0, 3 do
+                if enemy_state[i] == 1 then
+                    enemy_state[i] = 0
+                end
+            end
+        end
+    end
 
     -- end
     if cleared then break end
