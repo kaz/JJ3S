@@ -45,7 +45,8 @@ enemy_spd_half = enemy_spd >> 1
 enemy_x = {248, 296, 296, 296}
 enemy_y = {224, 224, 200-8, 248+8}
 enemy_rot = {2, 3, 0, 0}
-enemy_state = {0, 0, 0, 0} -- weak:1, dead:2
+enemy_state = {0, 0, 0, 0} -- weak:1, revive:2
+enemy_revive_count = {0, 0, 0, 0}
 enemy_count = 1
 enemy_out = 0
 weak_timer = 0
@@ -196,6 +197,14 @@ end
 function Edebuff()
 end
 
+function enemy_repop(i)
+    enemy_x[i] = 248
+    enemy_y[i] = 224
+    enemy_rot[i] = 2
+    enemy_state[i] = 2 -- revive
+    enemy_revive_count[i] = 40
+end
+
 function restart_enemy()
     enemy_x[0] = 248
     enemy_x[1] = 296
@@ -299,18 +308,26 @@ while 1 do
 
     -- process enemy
     for i = 0, 3 do
-        if i < enemy_count then
+        if enemy_revive_count[i] > 0 then
+            enemy_revive_count[i] = enemy_revive_count[i] - 1
+            if enemy_revive_count[i] == 0 then
+                enemy_state[i] = 0
+            end
+        elseif i < enemy_count then
             enemy_move(i)
         elseif i == enemy_count and enemy_out then
             enemy_out_anim(i)
         else
             enemy_wait(i)
         end
-        if enemy_state[i]==0 or (enemy_state[i]==1 and weak_timer >= 200 and weak_timer & 8) then -- normal
+        if enemy_state[i]==0 or (enemy_state[i]==1 and weak_timer >= 200 and weak_timer & 8) or (enemy_state[i]==2 and timer & 4) then -- normal
             ex3.draw_dynamic_sprite(8*7+i*2+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
             ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
-        else -- weak
+        elseif enemy_state[i]==1 then -- weak
             ex3.draw_dynamic_sprite(52+((timer>>1)&1), 0, enemy_x[i], enemy_y[i], i*2)
+            ex3.draw_dynamic_sprite(0, 0, enemy_x[i], enemy_y[i], i*2+1)
+        else
+            ex3.draw_dynamic_sprite(0, 0, enemy_x[i], enemy_y[i], i*2)
             ex3.draw_dynamic_sprite(0, 0, enemy_x[i], enemy_y[i], i*2+1)
         end
     end
@@ -325,9 +342,14 @@ while 1 do
         if tmpx<17 and tmpx>-17 and tmpy<17 and tmpy>-17 then
             if enemy_state[i]==0 then -- normal
                 goto gameover
-            else -- weak
-                enemy_state[i] = 2
-                -- TODO : kill anim
+            elseif enemy_state[i]==1 then -- weak
+                -- kill anim
+                ex3.draw_dynamic_sprite(19, 0, enemy_x[i], enemy_y[i]-32, i*2)
+                ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
+                for j = 0, 40 do
+                    ex3.sleep()
+                end
+                enemy_repop(i)
             end
         end
     end
