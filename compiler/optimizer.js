@@ -135,14 +135,21 @@ const constant_propagation = tree => {
 	
 	walk_tree_find_assign(tree);
 	const constants = Object.keys(assign).filter(k => assign[k].length == 1 && assign[k][0] && assign[k][0].type == "NumericLiteral");
+	const is_const = name => constants.some(e => e == name);
 	
 	const walk_tree_prop_const = t => {
 		if(t && typeof t == "object"){
-			if(t.type == "Identifier" && constants.some(e => e == t.name)){
+			if(t.type == "Identifier" && is_const(t.name)){
 				t = assign[t.name][0];
 			}
+			
+			const assigning = t.type == "AssignmentStatement" || t.type == "LocalStatement";
+			if(assigning && !t.variables.some(va => !is_const(va.name))){
+				return {type: "Noop"};
+			}
+			
 			for(let k in t){
-				if((t.type == "AssignmentStatement" || t.type == "LocalStatement") && k == "variables"){
+				if(assigning && k == "variables"){
 					continue;
 				}
 				t[k] = walk_tree_prop_const(t[k]);

@@ -2497,12 +2497,11 @@ const compile = abs_syn_tree => {
 			}
 		}
 		else if(ast.type == "TableConstructorExpression"){
-			const [l] = gen_label(1, "D_TABLE_");
+			const [l] = gen_label(1, "D_ARRAY_");
 			
-			asm_sub.push(l+"_PTR,");
-			asm_sub.push("SYM "+l);
+			asm_sub.push(l+", SYM "+l+"_MEM");
 			asm_sub.push("DEC "+ast.fields.length);
-			asm_sub.push(l+",");
+			asm_sub.push(l+"_MEM,");
 			
 			let fields = ast.fields.map(item => {
 				if(item.value.type != "NumericLiteral"){
@@ -2521,7 +2520,7 @@ const compile = abs_syn_tree => {
 			
 			fields.forEach(v => asm_sub.push("DEC "+v));
 			
-			t.push("LDA "+l+"_PTR");
+			t.push("LDA "+l);
 			t.push("BSA F_PUSH");
 		}
 		else if(ast.type == "IndexExpression"){
@@ -2851,7 +2850,7 @@ const compile = abs_syn_tree => {
 			
 			t.push("BSA F_PUSH");
 		}
-		else {
+		else if(ast.type != "Noop"){
 			throw new Error("Unknown type: "+ast.type);
 		}
 	};
@@ -3213,14 +3212,21 @@ const constant_propagation = tree => {
 	
 	walk_tree_find_assign(tree);
 	const constants = Object.keys(assign).filter(k => assign[k].length == 1 && assign[k][0] && assign[k][0].type == "NumericLiteral");
+	const is_const = name => constants.some(e => e == name);
 	
 	const walk_tree_prop_const = t => {
 		if(t && typeof t == "object"){
-			if(t.type == "Identifier" && constants.some(e => e == t.name)){
+			if(t.type == "Identifier" && is_const(t.name)){
 				t = assign[t.name][0];
 			}
+			
+			const assigning = t.type == "AssignmentStatement" || t.type == "LocalStatement";
+			if(assigning && !t.variables.some(va => !is_const(va.name))){
+				return {type: "Noop"};
+			}
+			
 			for(let k in t){
-				if((t.type == "AssignmentStatement" || t.type == "LocalStatement") && k == "variables"){
+				if(assigning && k == "variables"){
 					continue;
 				}
 				t[k] = walk_tree_prop_const(t[k]);
