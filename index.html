@@ -573,7 +573,7 @@ const entrypoint = (sharedSource, sharedMacro) => {
       let srcCon = editor.session.getDocument().getValue();
       let macroCon = macroEditor.session.getDocument().getValue();
       srcUpdate(srcCon,macroCon);
-    },300);
+    },700);
   };
   editHandler();
   editor.on('change',editHandler);
