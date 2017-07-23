@@ -154,8 +154,8 @@ const constant_propagation = tree => {
 	return walk_tree_prop_const(tree);
 };
 
-// 演算子適用時のループを削減
-const delete_operator_loop = tree => {
+// 演算子適用時のループを展開
+const unroll_op_loop = tree => {
 	const walk_tree = t => {
 		if(t && typeof t == "object"){
 			if((t.operator == "^" || t.operator == "<<" || t.operator == ">>") && t.right.type == "NumericLiteral"){
@@ -170,16 +170,8 @@ const delete_operator_loop = tree => {
 	return walk_tree(tree);
 };
 
-const optimize_syntax_tree = tree => {
-	const orig = JSON.stringify(tree);
-	tree = constant_folding(tree);
-	tree = constant_propagation(tree);
-	tree = delete_operator_loop(tree);
-	return JSON.stringify(tree) == orig ? tree : optimize_syntax_tree(tree);
-};
-
 // 無駄なBUNを削除
-const opt_del_bun = (t, i) => {
+const remove_bun = (t, i) => {
 	const m = (t[i] || "").match(/^BUN (.+)$/);
 	if(m){
 		for(let k = i+1; k < t.length; k++){
@@ -197,14 +189,14 @@ const opt_del_bun = (t, i) => {
 };
 
 // 無駄なPUSH/POPを削除
-const opt_del_push_pop = (t, i) => {
+const remove_push_pop = (t, i) => {
 	if(t[i] == "BSA F_PUSH" && t[i+1] == "BSA F_POP" || t[i] == "BSA F_POP" && t[i+1] == "BSA F_PUSH"){
 		t[i] = t[i+1] = null;
 	}
 };
 
 // 無駄なLDA/STAを削除
-const opt_del_lda_sta = (t, i) => {
+const remove_lda_sta = (t, i) => {
 	const cm = (t[i] || "").match(/^(LDA|STA) (.+)$/);
 	if(cm){
 		const nm = (t[i+1] || "").match(new RegExp("^(LDA|STA) "+cm[2]+"$"));
@@ -220,7 +212,7 @@ const opt_del_lda_sta = (t, i) => {
 };
 
 // ACを実質変更しない命令を削除
-const opt_del_not_affect_ac = (t, i) => {
+const remove_not_affect_ac = (t, i) => {
 	const target = /^(CLA|LDA)/;
 	const not_affect_ac = /^(S[TPNZ]A|SZE|C[LM]E|SEG|SL[XY]|WRT|TR[XY]|SLP)/;
 	if(target.test(t[i])){
@@ -236,7 +228,7 @@ const opt_del_not_affect_ac = (t, i) => {
 };
 
 // 自己代入を最適化
-const opt_self_assign = (t, i) => {
+const fix_self_assign = (t, i) => {
 	const repl_conf = [{
 		pat: [/^LDA (.+)$/, /^BSA/, /^LDA/, /^STA/, /^BSA/, /^(ADD|MUL|AND)/],
 		rep: [0,0,1,0,0,"$1 $0"],
@@ -270,7 +262,7 @@ const opt_self_assign = (t, i) => {
 };
 
 // よりクロック数の少ない命令に置き換え
-const opt_replace_inst = (t, i) => {
+const use_fast_inst = (t, i) => {
 	if(t[i] == "LDA C_P0"){
 		t[i] = "CLA";
 	}
@@ -280,7 +272,7 @@ const opt_replace_inst = (t, i) => {
 };
 
 // スタックの代わりにレジスタを利用
-const opt_pseudo_stack = (t, i) => {
+const use_register = (t, i) => {
 	if(!/^BSA F_PUSH$/.test(t[i])){
 		return;
 	}
@@ -306,21 +298,6 @@ const opt_pseudo_stack = (t, i) => {
 			break;
 		}
 	}
-};
-
-const optimize_instructions = code => {
-	const orig = [].concat(code);
-	code.forEach((_, i) => {
-		opt_del_bun(code, i);
-		opt_del_push_pop(code, i);
-		opt_del_lda_sta(code, i);
-		opt_del_not_affect_ac(code, i);
-		opt_self_assign(code, i);
-		opt_replace_inst(code, i);
-		opt_pseudo_stack(code, i);
-	});
-	code = code.filter(e => e);
-	return code.some((v, i) => orig[i] != v) ? optimize_instructions(code) : code;
 };
 
 const merge_labels = code => {
@@ -357,7 +334,8 @@ const reassign_labels = (code, prefix = "L_") => {
 	});
 };
 
-const optimize_sequences = code => {
+// for SIZE (increases BSA overhead)
+const optimize_sequence = code => {
 	let insts = merge_labels(code);
 	let gadd = [];
 	
@@ -432,4 +410,44 @@ const optimize_sequences = code => {
 	return reassign_labels(insts);
 };
 
-module.exports = {optimize_syntax_tree, optimize_instructions, optimize_sequences};
+const methods_tree = {
+	constant_folding, // for SPEED, for SIZE
+	constant_propagation, // for SPEED, for SIZE
+	unroll_op_loop, // for SPEED (sometimes increases SIZE)
+};
+const optimize_tree = tree => {
+	const orig = JSON.stringify(tree);
+	for(let key in methods_tree){
+		tree = methods_tree[key](tree);
+	}
+	tree = constant_folding(tree);
+	tree = constant_propagation(tree);
+	tree = unroll_op_loop(tree);
+	return JSON.stringify(tree) == orig ? tree : optimize_tree(tree);
+};
+
+const methods_code = {
+	remove_bun, // for SIZE
+	remove_push_pop, // for SPEED, for SIZE
+	remove_lda_sta, // for SPEED, for SIZE
+	remove_not_affect_ac, // for SPEED, for SIZE
+	fix_self_assign, // for SPEED, for SIZE
+	use_fast_inst, // for SPEED
+	use_register, // for SPEED
+};
+const optimize_code = code => {
+	const orig = JSON.stringify(code);
+	code.forEach((_, i) => {
+		for(let key in methods_code){
+			methods_code[key](code, i);
+		}
+	});
+	code = code.filter(e => e);
+	return JSON.stringify(code) == orig ? code : optimize_code(code);
+};
+
+module.exports = {
+	optimize_sequence,
+	optimize_tree, methods_tree,
+	optimize_code, methods_code,
+};
