@@ -219,11 +219,21 @@ function restart_enemy()
     weak_timer = 0
 end
 
+::gamestart::
+
+cleared = 0
+small_score = 0
+
 -- Main routine
 
 for y = 0, 27 do
     for x = 0, 30 do
-        ex3.draw_static_sprite(map[x+y*31], 0, x+x_gap, y+y_gap)
+        m = map[x+y*31]
+        if m==32+1 or m==32+2 then
+            m = m - 32
+            map[x+y*31] = m
+        end
+        ex3.draw_static_sprite(m, 0, x+x_gap, y+y_gap)
     end
 end
 
@@ -390,7 +400,7 @@ end
 
 -- clear animation
 count = 0
-for t = 0, 56 do
+for t = 0, 42 do
     if t == (t >> 3) * 8 then
         count = count + 32
         if count == 64 then count = 0 end
@@ -407,10 +417,11 @@ for t = 0, 56 do
 end
 
 -- wait
-while 1 do
+for i = 0, 120 do
     ex3.sleep()
 end
 
+goto gamestart
 
 ::gameover::
     for i = 0, 30 do
