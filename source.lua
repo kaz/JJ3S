@@ -302,7 +302,7 @@ while 1 do
     for i = 0, 3 do
         if enemy_revive_count[i] > 0 then
             enemy_revive_count[i] = enemy_revive_count[i] - 1
-            if enemy_revive_count[i] == 0 then
+            if enemy_revive_count[i] == 0 and enemy_state[i] ~= 1 then
                 enemy_state[i] = 0
             end
         elseif i < enemy_count then
