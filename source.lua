@@ -189,18 +189,6 @@ function enemy_wait(index)
     end
 end
 
-function ishit(pacman_x, pacman_y)
-    for i = 0, 3 do
-        tmp=enemy_x[i]+enemy_y[i]-pacman_x-pacman_y
-        if tmp<5 and tmp>-5 then
-           goto gameover
-        end
-    end
-end
-
-function Edebuff()
-end
-
 function enemy_repop(i)
     enemy_x[i] = 248
     enemy_y[i] = 224
