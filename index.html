@@ -1017,7 +1017,7 @@ const entrypoint = (sharedSource, sharedMacro) => {
   if(/share/.test(location.search)){
     editor.session.getDocument().setValue(sharedSource);
     macroEditor.session.getDocument().setValue(sharedMacro);
-    loadUrl("res/sprite.png");
+    loadUrl("res/sprite_small.png");
     history.replaceState(null, null, "?");
   }
 };
