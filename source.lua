@@ -56,6 +56,7 @@ small_amount = 240
 
 cleared = 0
 timer = 0
+score = 0
 
 enemy_walk_mode = 0
 
@@ -88,10 +89,14 @@ function pacman_move()
         ex3.draw_static_sprite(m+32, 0, x+x_gap, y+y_gap)
         if m == 1 then
             small_score = small_score + 1
+            score = score + 10
+            showScore()
             if small_score == small_amount then
                 cleared = 1
             end
         elseif m == 2 then
+            score = score + 20
+            showScore()
             for i = 0, 3 do
                 enemy_state[i] = 1
                 weak_timer = 1
@@ -219,10 +224,16 @@ function restart_enemy()
     weak_timer = 0
 end
 
+function showScore()
+    ex3.output_7seg(score)
+end
+
 ::gamestart::
 
 cleared = 0
 small_score = 0
+score = 0
+showScore()
 
 -- Main routine
 
@@ -348,6 +359,8 @@ while 1 do
             if enemy_state[i]==0 then -- normal
                 goto gameover
             elseif enemy_state[i]==1 then -- weak
+                score = score + 200
+                showScore()
                 -- kill anim
                 ex3.draw_dynamic_sprite(19, 0, enemy_x[i], enemy_y[i]-32, i*2)
                 ex3.draw_dynamic_sprite(8*6+enemy_rot[i], 0, enemy_x[i], enemy_y[i], i*2+1)
@@ -358,9 +371,6 @@ while 1 do
             end
         end
     end
-
-    -- defeat enemy
-
 
     ex3.sleep()
     timer = timer + 1
@@ -379,6 +389,9 @@ while 1 do
     -- end
     if cleared then break end
 end
+
+score = 0xffff
+showScore()
 
 -- 5000 chou
 for i = 0, 3 do
