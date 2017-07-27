@@ -207,13 +207,8 @@ const remove_lda_sta = (t, i) => {
 	const cm = (t[i] || "").match(/^(LDA|STA) (.+)$/);
 	if(cm){
 		const nm = (t[i+1] || "").match(new RegExp("^(LDA|STA) "+cm[2]+"$"));
-		if(nm){
-			if(cm[1] == "LDA" && nm[1] == "STA"){
-				t[i] = t[i+1] = null;
-			}
-			else if(cm[1] == "STA" && nm[1] == "LDA"){
-				t[i+1] = null;
-			}
+		if(nm && ((cm[1] == "LDA" && nm[1] == "STA") || (cm[1] == "STA" && nm[1] == "LDA"))){
+			t[i+1] = null;
 		}
 	}
 };
@@ -427,9 +422,6 @@ const optimize_tree = tree => {
 	for(let key in methods_tree){
 		tree = methods_tree[key](tree);
 	}
-	tree = constant_folding(tree);
-	tree = constant_propagation(tree);
-	tree = unroll_op_loop(tree);
 	return JSON.stringify(tree) == orig ? tree : optimize_tree(tree);
 };
 
